@@ -1,0 +1,44 @@
+@import 'tailwindcss';
+
+@layer base {
+  :root {
+    /* Forest Dark Theme - UK Landscape QS 2026 */
+    --color-bg-primary: #051F20;
+    --color-bg-card: #0B2B26;
+    --color-accent: #8EB69B;
+    --color-text-primary: #DAF1DE;
+    --color-text-secondary: #6B8F7B;
+    --color-border: #1A3F3A;
+    --color-success: #52A675;
+    --color-warning: #D4A574;
+    
+    color-scheme: dark;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--color-bg-primary);
+  }
+
+  body {
+    @apply min-h-screen;
+    background-color: #051F20;
+    color: #DAF1DE;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  a {
+    color: #8EB69B;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  
+  a:hover {
+    color: #A0C7AB;
+  }
+}
+

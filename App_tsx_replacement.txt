@@ -1,0 +1,69 @@
+// REPLACEMENT CODE FOR App.tsx lines 389-409
+// Copy this section and paste it to replace lines 389-409 in c:\Users\pirin\estimator-agent\src\App.tsx
+
+            if (message.role === 'estimate' && estimate) {
+              const isVIP = estimate.projectStatus === 'VIP PRIORITY'
+              
+              return (
+                <div key={message.id} className="my-6">
+                  {/* Project Feasibility Summary Card */}
+                  <div
+                    className="rounded-3xl p-6 mb-4"
+                    style={{
+                      background: isVIP 
+                        ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'
+                        : 'linear-gradient(135deg, #8EB69B 0%, #6B8F7B 100%)',
+                      border: isVIP ? '2px solid #FFD700' : 'none'
+                    }}
+                  >
+                    <h3 className="text-lg uppercase tracking-wider font-bold mb-4" style={{ color: '#051F20' }}>
+                      Project Feasibility Summary
+                    </h3>
+                    
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center pb-2 border-b" style={{ borderColor: isVIP ? '#FFA500' : '#6B8F7B' }}>
+                        <span className="text-sm font-semibold" style={{ color: '#051F20' }}>Name:</span>
+                        <span className="text-sm font-bold" style={{ color: '#051F20' }}>{state.fullName || 'N/A'}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center pb-2 border-b" style={{ borderColor: isVIP ? '#FFA500' : '#6B8F7B' }}>
+                        <span className="text-sm font-semibold" style={{ color: '#051F20' }}>Phone:</span>
+                        <span className="text-sm font-bold" style={{ color: '#051F20' }}>{state.contactPhone || 'N/A'}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center pb-2 border-b" style={{ borderColor: isVIP ? '#FFA500' : '#6B8F7B' }}>
+                        <span className="text-sm font-semibold" style={{ color: '#051F20' }}>Your Budget:</span>
+                        <span className="text-sm font-bold" style={{ color: '#051F20' }}>
+                          {state.userBudget ? formatCurrencyGBP(state.userBudget) : 'N/A'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center pb-2 border-b" style={{ borderColor: isVIP ? '#FFA500' : '#6B8F7B' }}>
+                        <span className="text-sm font-semibold" style={{ color: '#051F20' }}>Calculated Project Cost:</span>
+                        <span className="text-xl font-bold" style={{ color: '#051F20' }}>
+                          {formatCurrencyGBP(estimate.estimate)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center pt-2">
+                        <span className="text-sm font-semibold" style={{ color: '#051F20' }}>Project Status:</span>
+                        <span 
+                          className="text-lg font-bold px-3 py-1 rounded-lg" 
+                          style={{ 
+                            color: isVIP ? '#8B0000' : '#051F20',
+                            backgroundColor: isVIP ? '#FFE5B4' : '#DAF1DE'
+                          }}
+                        >
+                          {estimate.projectStatus}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Range display */}
+                    <div className="mt-4 pt-4 border-t" style={{ borderColor: isVIP ? '#FFA500' : '#6B8F7B' }}>
+                      <div className="flex items-center justify-between text-xs" style={{ color: '#051F20' }}>
+                        <span>Lower: {formatCurrencyGBP(estimate.lowerBound)}</span>
+                        <span>Upper: {formatCurrencyGBP(estimate.upperBound)}</span>
+                      </div>
+                    </div>
+                  </div>

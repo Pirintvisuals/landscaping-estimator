@@ -1,0 +1,7 @@
+name = "estimator-agent"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-02-10"
+
+[vars]
+GEMINI_MODEL = "gemini-1.5-flash"
+

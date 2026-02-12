@@ -1,0 +1,80 @@
+// ADD THIS TO App.tsx AFTER THE ESTIMATE DISPLAY
+
+// Add state for email submission at the top with other state variables
+const [emailSent, setEmailSent] = useState(false)
+const [sendingEmail, setSendingEmail] = useState(false)
+
+// Add this function to handle submit button click
+const handleSubmitLead = async () => {
+  if (!estimate) return
+  
+  setSendingEmail(true)
+  
+  try {
+    const leadData = {
+      fullName: state.fullName || 'N/A',
+      contactPhone: state.contactPhone || 'N/A',
+      contactEmail: state.contactEmail || 'N/A',
+      userBudget: state.userBudget || 0,
+      estimatedCost: estimate.estimate,
+      projectStatus: estimate.projectStatus,
+      service: state.service || 'unknown',
+      area: state.area_m2 || 0
+    }
+    
+    const response = await fetch('/api/send-lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(leadData)
+    })
+    
+    if (response.ok) {
+      setEmailSent(true)
+      // Show success message
+      const successMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'agent',
+        content: '✅ **Thank you!** Your project details have been submitted. We\'ll contact you within 24 hours to schedule your site survey.',
+        timestamp: new Date()
+      }
+      setState(prev => ({
+        ...prev,
+        messageHistory: [...prev.messageHistory, successMsg]
+      }))
+    } else {
+      throw new Error('Failed to send')
+    }
+  } catch (error) {
+    console.error('Email send error:', error)
+    alert('Sorry, there was an error submitting your details. Please contact us directly at pirint.milan@gmail.com')
+  } finally {
+    setSendingEmail(false)
+  }
+}
+
+// ADD THIS BUTTON AFTER THE ESTIMATE CARD (after line ~460, after the </div> closing the estimate display)
+
+{message.role === 'estimate' && estimate && !emailSent && (
+  <div className="mt-6 text-center">
+    <button
+      onClick={handleSubmitLead}
+      disabled={sendingEmail}
+      className="px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105"
+      style={{
+        background: estimate.projectStatus === 'VIP PRIORITY'
+          ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'
+          : 'linear-gradient(135deg, #8EB69B 0%, #6B8F7B 100%)',
+        color: '#051F20',
+        border: 'none',
+        cursor: sendingEmail ? 'not-allowed' : 'pointer',
+        opacity: sendingEmail ? 0.7 : 1,
+        boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+      }}
+    >
+      {sendingEmail ? '📧 Submitting...' : '📋 Request Site Survey'}
+    </button>
+    <p className="text-xs mt-2" style={{ color: '#6B8F7B' }}>
+      Click to submit your details and schedule a technical site survey
+    </p>
+  </div>
+)}
