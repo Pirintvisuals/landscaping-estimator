@@ -11,9 +11,15 @@
     "deploy:cf": "npm run build && wrangler pages deploy dist --project-name=estimator-agent"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@types/dompurify": "^3.0.5",
+    "@vercel/edge": "^1.2.2",
+    "@vercel/node": "^5.6.3",
     "@xstate/react": "^5.0.5",
+    "dompurify": "^3.3.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "resend": "^6.9.2",
     "xstate": "^5.26.0",
     "zod": "^3.25.76"
   },

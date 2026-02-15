@@ -20,6 +20,8 @@ import {
   type EstimateResult,
   type ProjectInputs
 } from './qouter'
+import DOMPurify from 'dompurify'
+import { estimatorSchema, contactSchema } from './schemas/estimator'
 
 function App() {
   const [state, setState] = useState<ConversationState>(createInitialState())
@@ -57,7 +59,7 @@ function App() {
     setSendingEmail(true)
 
     try {
-      const leadData = {
+      const rawLeadData = {
         fullName: state.fullName || 'N/A',
         contactPhone: state.contactPhone || 'N/A',
         contactEmail: state.contactEmail || 'N/A',
@@ -65,7 +67,40 @@ function App() {
         estimatedCost: estimate.estimate,
         projectStatus: estimate.projectStatus,
         service: state.service || 'unknown',
-        area: state.area_m2 || 0
+        area: state.area_m2 || 0,
+        postalCode: state.postalCode,
+        // New fields
+        projectStartTiming: state.projectStartTiming || 'Not specified',
+        groundSoilType: state.groundSoilType || 'Not specified',
+        hasExcavatorAccess: state.hasExcavatorAccess // useful for 'ACCESS'
+      }
+
+      // 1. Zod Validation
+      // We validate the contact info part mostly, as other parts are derived from state logic
+      // But let's check basic sanity
+      try {
+        contactSchema.parse({
+          fullName: rawLeadData.fullName,
+          contactPhone: rawLeadData.contactPhone,
+          contactEmail: rawLeadData.contactEmail,
+          userBudget: rawLeadData.userBudget
+        })
+      } catch (validationError) {
+        console.error('Validation failed:', validationError)
+        alert('Please check your contact details. They appear to be invalid.')
+        setSendingEmail(false)
+        return
+      }
+
+      // 2. Sanitization (though we send JSON, it's good practice to sanitize values if they are ever echoed back)
+      const leadData = {
+        ...rawLeadData,
+        fullName: DOMPurify.sanitize(rawLeadData.fullName),
+        contactPhone: DOMPurify.sanitize(rawLeadData.contactPhone),
+        contactEmail: DOMPurify.sanitize(rawLeadData.contactEmail),
+        projectStartTiming: DOMPurify.sanitize(rawLeadData.projectStartTiming),
+        groundSoilType: DOMPurify.sanitize(rawLeadData.groundSoilType)
+        // numeric fields don't need sanitization
       }
 
       const response = await fetch('/api/send-lead', {
@@ -79,7 +114,7 @@ function App() {
         const successMsg: ChatMessage = {
           id: crypto.randomUUID(),
           role: 'agent',
-          content: '✅ **Thank you!** Your project details have been submitted. We\'ll contact you within 24 hours to schedule your site survey.',
+          content: '✅ **Request Received.** I have submitted your request to **Secure Your Project Slot**.',
           timestamp: new Date()
         }
         setState(prev => ({
@@ -98,7 +133,7 @@ function App() {
       const successMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'agent',
-        content: '✅ **(DEV MODE)** Email simulated! Your project details have been submitted.',
+        content: '✅ **Request Received.** I have submitted your request to **Secure Your Project Slot**.',
         timestamp: new Date()
       }
       setState(prev => ({
@@ -115,10 +150,13 @@ function App() {
 
     if (!input.trim() || isProcessing) return
 
+    const sanitizedInput = DOMPurify.sanitize(input.trim())
+    if (!sanitizedInput) return // Prevent empty after sanitization
+
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: input.trim(),
+      content: sanitizedInput,
       timestamp: new Date()
     }
 
@@ -134,42 +172,67 @@ function App() {
     try {
       let extracted: ExtractedInfo = {}
 
-      // Try API first (online mode with Gemini AI)
-      try {
-        const response = await fetch('/api/conversation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userMessage: userMessage.content,
-            conversationState: state
-          })
-        })
+      // 1. Try LOCAL EXTRACTION first (Fastest)
+      // We import dynamically to keep initial bundle small, though for this size it's negligible
+      const { extractLocalInformation, calculateConfidence } = await import('./localExtraction')
+      extracted = extractLocalInformation(userMessage.content)
+      const localConfidence = calculateConfidence(extracted)
 
-        if (response.ok) {
-          const data = await response.json()
-          extracted = data.extracted || {}
-          console.log('✅ Using online mode (Gemini API)')
-        } else {
-          throw new Error('API not available')
+      // 2. Decide if we need the API
+      // If we found the CURRENTLY requested field, or confidence is high, skip API
+      const currentField = detectCurrentField(state)
+      const relevantFieldFound = isRelevantFieldExtracted(currentField, extracted, state, updateStateWithExtraction(state, extracted, currentField))
+
+      // Heuristic: If we found what we asked for, OR confidence is high (>50), OR it's a simple yes/no/number
+      // Then use local data and skip the slow API call.
+      const useLocalOnly = relevantFieldFound || localConfidence > 50 ||
+        /^(yes|no|yep|nope|\d+(\.\d+)?)$/i.test(sanitizedInput)
+
+      if (useLocalOnly) {
+        console.log('⚡ Using local extraction (Fast Mode)', extracted)
+      } else {
+        // 3. Fallback to API if local failed to understand complex intent
+        try {
+          console.log('🌐 Complex input detected, calling Gemini API...')
+          const response = await fetch('/api/conversation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userMessage: userMessage.content,
+              conversationState: state
+            })
+          })
+
+          if (response.ok) {
+            const data = await response.json()
+            const apiExtracted = data.extracted || {}
+            // Merge API results (API takes precedence if conflict, usually)
+            extracted = { ...extracted, ...apiExtracted }
+            console.log('✅ API extraction complete')
+          } else {
+            throw new Error('API not available')
+          }
+        } catch (apiError) {
+          console.log('⚠️ API unavailable, continuing with local only')
         }
-      } catch (apiError) {
-        // Fallback to local extraction (offline mode)
-        console.log('⚡ Using offline mode (local extraction)')
-        const { extractLocalInformation } = await import('./localExtraction')
-        extracted = extractLocalInformation(userMessage.content)
       }
 
-      // Update state with extracted information
-      const updatedState = updateStateWithExtraction(state, extracted)
+      // Update state with extracted information - PASS CURRENT FIELD for context awareness
+      const updatedState = updateStateWithExtraction(state, extracted, currentField)
 
       // RETRY DETECTION: Check if extraction was successful FOR THE CURRENT FIELD
       let stateWithRetry = updatedState
-      const currentField = detectCurrentField(state)
+      // currentField is already defined above
       const relevantFieldExtracted = isRelevantFieldExtracted(currentField, extracted, state, updatedState)
 
-      if (!relevantFieldExtracted) {
+      // FORCE ACCEPT POSTCODE: If we asked for postcode, and user typed something, accept it.
+      if (currentField === 'postalCode' && !relevantFieldExtracted && sanitizedInput.length > 1) {
+        // Manually inject it
+        stateWithRetry.postalCode = sanitizedInput.toUpperCase()
+        // Clear retry count effectively
+        stateWithRetry = resetRetryCount(stateWithRetry)
+      } else if (!relevantFieldExtracted) {
         // Current field wasn't extracted - user response not understood for this question
-
         stateWithRetry = incrementRetryCount(updatedState, currentField)
 
         // Show fallback quick replies if retry count >= 1
@@ -195,7 +258,8 @@ function App() {
 
       // Check if ready for estimate
       if (isReadyForEstimate(stateWithRetry) && !nextQ) {
-        agentContent += "I now have everything I need to give you a professional ballpark estimate. Let me calculate that for you..."
+        const serviceName = stateWithRetry.service || 'landscaping'
+        agentContent += `I've gathered everything. Because it's currently peak season, we are actually only taking on 3 more ${serviceName} projects before the summer starts to ensure we maintain our high standards. I’ll send this over to our senior surveyor right now.`
 
         const agentMessage: ChatMessage = {
           id: crypto.randomUUID(),
@@ -276,9 +340,10 @@ function App() {
   }
 
   const generateEstimate = (conversationState: ConversationState) => {
+    let inputs: ProjectInputs | undefined;
     try {
       // Build ProjectInputs from conversation state
-      const inputs: ProjectInputs = {
+      inputs = {
         service: conversationState.service || 'hardscaping',
         hasExcavatorAccess: conversationState.hasExcavatorAccess ?? true,
         hasDrivewayForSkip: conversationState.hasDrivewayForSkip ?? true,
@@ -292,7 +357,10 @@ function App() {
         deckHeight_m: conversationState.deckHeight_m || undefined
       }
 
-      const result = calculateUKEstimate(inputs)
+      // Validate inputs using Zod to ensure positive numbers and correct types
+      const safeInputs = estimatorSchema.parse(inputs)
+      // ... same as before
+      const result = calculateUKEstimate(safeInputs as ProjectInputs)
       setEstimate(result)
 
       const estimateMessage: ChatMessage = {
@@ -309,17 +377,19 @@ function App() {
 
     } catch (error) {
       console.error('Failed to generate estimate:', error)
+      if (inputs) console.error('Inputs causing error:', inputs)
 
       const errorMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'agent',
-        content: "I'm having trouble calculating that estimate. Could you verify the project details?",
+        content: "I'm having trouble calculating that estimate. Could you verify the project details? (Error code: invalid_inputs)",
         timestamp: new Date()
       }
 
       setState(prev => ({
         ...prev,
-        messageHistory: [...prev.messageHistory, errorMessage]
+        messageHistory: [...prev.messageHistory, errorMessage],
+        awaitingEstimate: false // Allow retry
       }))
     }
   }
@@ -361,10 +431,10 @@ function App() {
                     <p
                       className="text-sm leading-relaxed whitespace-pre-wrap"
                       dangerouslySetInnerHTML={{
-                        __html: message.content.replace(
+                        __html: DOMPurify.sanitize(message.content.replace(
                           /\[([^\]]+)\]\(([^\)]+)\)/g,
                           '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #8EB69B; text-decoration: underline;">$1</a>'
-                        )
+                        ))
                       }}
                     />
                   </div>
@@ -406,9 +476,12 @@ function App() {
                       border: isVIP ? '2px solid #FFD700' : 'none'
                     }}
                   >
-                    <h3 className="text-lg uppercase tracking-wider font-bold mb-4" style={{ color: '#051F20' }}>
-                      Project Feasibility Summary
+                    <h3 className="text-lg uppercase tracking-wider font-bold mb-1" style={{ color: '#051F20' }}>
+                      Professional Ballpark Investment
                     </h3>
+                    <p className="text-xs font-normal opacity-75 mb-4" style={{ color: '#051F20' }}>
+                      (Includes 15-17% 2026 material/labor uplift)
+                    </p>
 
                     <div className="space-y-3">
                       <div className="flex justify-between items-center pb-2 border-b" style={{ borderColor: isVIP ? '#FFA500' : '#6B8F7B' }}>
@@ -508,10 +581,15 @@ function App() {
                     <p className="text-xs uppercase tracking-wider font-semibold mb-3" style={{ color: '#8EB69B' }}>
                       Surveyor's Notes
                     </p>
-                    <p className="text-sm leading-relaxed" style={{ color: '#DAF1DE' }}>
+                    <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: '#DAF1DE' }}>
                       {estimate.reasoning}
                     </p>
                   </div>
+
+                  {/* Disclaimer */}
+                  <p className="text-[10px] text-center mt-4 px-4 leading-tight opacity-50" style={{ color: '#6B8F7B' }}>
+                    This estimate is intended for guidance only and does not constitute a firm quote or legal contract. The "Calculated Project Cost" is a rough approximation based on typical 2026 material and labor rates. Final costs may fluctuate based on a formal site survey, specific material availability, and detailed project specifications.
+                  </p>
 
                   {/* Submit Button */}
                   {!emailSent && (
@@ -531,11 +609,35 @@ function App() {
                           boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                         }}
                       >
-                        {sendingEmail ? '📧 Submitting...' : '📋 Request Site Survey'}
+                        {sendingEmail ? '📧 Submitting...' : '🔒 Secure My Project Slot'}
                       </button>
                       <p className="text-xs mt-2" style={{ color: '#6B8F7B' }}>
-                        Click to submit your details and schedule a technical site survey
+                        Limited slots available for Spring 2026
                       </p>
+                    </div>
+                  )}
+
+                  {/* VIP CALENDLY LINK - Always visible for VIPs, even after submit */}
+                  {estimate.projectStatus === 'VIP PRIORITY' && (
+                    <div className="mt-6 p-4 rounded-xl border border-[#FFD700] bg-[#FFD70010]">
+                      <p className="text-sm font-bold mb-2" style={{ color: '#FFD700' }}>
+                        VIP PRIORITY ACCESS
+                      </p>
+                      <p className="text-sm mb-3" style={{ color: '#DAF1DE' }}>
+                        Because your project is a priority for us, you can book an instant 15-minute consultation with our lead designer right now to lock in your estimate.
+                      </p>
+                      <a
+                        href="https://calendly.com/pirint-milan/weboldal"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-4 py-2 rounded-lg font-bold text-sm transition-colors hover:bg-[#FFD700] hover:text-[#051F20]"
+                        style={{
+                          color: '#051F20',
+                          backgroundColor: '#FFD700'
+                        }}
+                      >
+                        📅 Book Consultation Now
+                      </a>
                     </div>
                   )}
                 </div>

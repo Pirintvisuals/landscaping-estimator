@@ -64,6 +64,11 @@ export interface ConversationState {
     // User information (collected before revealing estimate)
     fullName: string | null
     userBudget: number | null  // User's estimated budget
+    postalCode: string | null
+
+    // New fields per user request
+    projectStartTiming: string | null
+    groundSoilType: string | null
 }
 
 export interface ExtractedInfo {
@@ -85,8 +90,12 @@ export interface ExtractedInfo {
     budgetAligns?: boolean
     fullName?: string
     userBudget?: number
+    postalCode?: string
     contactEmail?: string
     contactPhone?: string
+    projectStartTiming?: string
+    groundSoilType?: string
+    explicitBudget?: boolean // True if input had currency symbols or 'budget' keyword
 }
 
 // ============================================================================
@@ -120,7 +129,10 @@ export function createInitialState(): ConversationState {
         contactPhone: null,
         contactEmail: null,
         fullName: null,
-        userBudget: null
+        userBudget: null,
+        postalCode: null,
+        projectStartTiming: null,
+        groundSoilType: null
     }
 }
 
@@ -148,17 +160,13 @@ export function calculateCertainty(state: ConversationState): number {
 
     // Service-specific scoring (25 points)
     if (state.service === 'mowing') {
-        // For mowing: overgrown status is the key field
         maxScore += 25
         if (state.overgrown !== null) score += 25
     } else if (state.service === 'planting' || state.service === 'softscaping') {
-        // For planting/softscaping: lighter requirements
         maxScore += 10
         if (state.slopeLevel) score += 5
         if (state.hasDrivewayForSkip !== null) score += 5
-        // Lower total maxScore means higher percentage with just basics
     } else {
-        // For hardscaping/decking/fencing/framing: need site info
         maxScore += 10
         if (state.hasExcavatorAccess !== null) score += 10
 
@@ -213,62 +221,52 @@ export function getNextQuestion(state: ConversationState): string | null {
         return tierQuestions[state.service]
     }
 
-    // Priority 4: Site access (critical for labor multiplier)
-    // Skip for services that don't require excavation
+    // Priority 4: Site access
     const excavationServices = ['hardscaping', 'decking', 'fencing', 'framing']
     if (state.hasExcavatorAccess === null && state.service && excavationServices.includes(state.service)) {
         return "Is there a way for a small digger (about 90cm wide) to get into your garden, or is the gate narrower than that?"
     }
 
     // Priority 5: Service-specific questions
-
-    // Decking: Ask about height
     if (state.service === 'decking' && state.deckHeight_m === null) {
         return "How high off the ground will this deck be? This helps me factor in safety requirements."
     }
-
-    // Mowing: Ask about overgrowth
     if (state.service === 'mowing' && state.overgrown === null) {
         return "When was it last cut? If it's been more than 2 weeks, I'll need to factor in extra time for collection."
     }
-
-    // Fencing: Ask about gates
     if (state.service === 'fencing' && state.gateCount === null) {
         return "Will you need any gates in this fence?"
     }
 
-    // Priority 6: Site conditions (only for services needing heavy work)
+    // Priority 6: Site conditions
     const heavyWorkServices = ['hardscaping', 'decking', 'fencing', 'framing', 'softscaping']
     if (state.hasDrivewayForSkip === null && state.service && heavyWorkServices.includes(state.service)) {
         return "Is there a driveway where we can place a skip for waste disposal, or would it need to go on the street?"
     }
-
     if (state.slopeLevel === null && state.service && heavyWorkServices.includes(state.service)) {
         return "How would you describe the ground—fairly flat, moderate slope, or quite steep?"
     }
-
     if (state.existingDemolition === null && (state.service === 'hardscaping' || state.service === 'decking')) {
         return "Is there any existing hardscape or structure we'd need to remove first?"
     }
 
-    // Priority 7: User information (collected BEFORE revealing estimate)
+    // Priority 7: User information
     if (!state.fullName) {
         return "Before I prepare your estimate, may I have your full name for the project summary?"
     }
-
     if (!state.contactPhone) {
         return "And what's the best phone number to reach you at?"
     }
-
     if (!state.contactEmail) {
         return "And your email address?"
     }
-
     if (state.userBudget === null) {
         return "What budget have you set aside for this project? This helps me understand if we're aligned."
     }
+    if (!state.postalCode) {
+        return "Finally, what's the postcode for the project address?"
+    }
 
-    // All essential questions answered
     return null
 }
 
@@ -291,37 +289,26 @@ export function generateAcknowledgment(_state: ConversationState, extracted: Ext
         }
         acks.push(serviceNames[extracted.service])
     }
-
     if (extracted.area_m2 || (extracted.length_m && extracted.width_m)) {
         const area = extracted.area_m2 || (extracted.length_m! * extracted.width_m!)
         acks.push(`So roughly ${area.toFixed(0)} square meters.`)
     }
+    if (extracted.materialTier === 'luxury') acks.push("Premium choice—that'll look stunning.")
+    else if (extracted.materialTier === 'premium') acks.push("Solid mid-range option with great longevity.")
+    else if (extracted.materialTier === 'standard') acks.push("Good budget-friendly option.")
 
-    if (extracted.materialTier === 'luxury') {
-        acks.push("Premium choice—that'll look stunning.")
-    } else if (extracted.materialTier === 'premium') {
-        acks.push("Solid mid-range option with great longevity.")
-    } else if (extracted.materialTier === 'standard') {
-        acks.push("Good budget-friendly option.")
-    }
-
-    // Only acknowledge if they JUST told us about narrow access in this message (not already in state)
     if (extracted.hasExcavatorAccess === false && _state.hasExcavatorAccess === null) {
         acks.push("Since the access is narrow, I'll need to factor in manual labor for the excavation phase.")
     }
-
     if (extracted.slopeLevel === 'steep') {
         acks.push("Given that the ground is steep, we'll need specialized grading equipment.")
     }
-
     if (extracted.deckHeight_m && extracted.deckHeight_m > 1.5) {
         acks.push(`At ${extracted.deckHeight_m.toFixed(1)}m height, we'll need scaffolding for safety.`)
     }
-
     if (extracted.overgrown) {
         acks.push("Since it's been a while since the last cut, I'll factor in extra time for collection.")
     }
-
     if (extracted.gateCount && extracted.gateCount > 0) {
         const plural = extracted.gateCount > 1 ? 'gates' : 'gate'
         acks.push(`I'll include ${extracted.gateCount} ${plural} in the estimate.`)
@@ -341,7 +328,16 @@ export function updateStateWithExtraction(
     const updated = { ...state }
 
     if (extracted.service) updated.service = extracted.service
-    if (extracted.area_m2) updated.area_m2 = extracted.area_m2
+
+    // SAFEGUARD: Don't overwrite Area with tiny numbers
+    if (extracted.area_m2) {
+        const isDimensionsQuestion = state.lastQuestionField === 'dimensions' || !state.area_m2
+        if (state.area_m2 && state.area_m2 > 2 && extracted.area_m2 < 2 && !isDimensionsQuestion) {
+            // Ignore
+        } else {
+            updated.area_m2 = extracted.area_m2
+        }
+    }
     if (extracted.length_m) updated.length_m = extracted.length_m
     if (extracted.width_m) updated.width_m = extracted.width_m
     if (extracted.materialTier) updated.materialTier = extracted.materialTier
@@ -350,14 +346,19 @@ export function updateStateWithExtraction(
     if (extracted.slopeLevel) updated.slopeLevel = extracted.slopeLevel
     if (extracted.subBaseType) updated.subBaseType = extracted.subBaseType
     if (extracted.existingDemolition !== undefined) updated.existingDemolition = extracted.existingDemolition
-    if (extracted.deckHeight_m !== undefined) updated.deckHeight_m = extracted.deckHeight_m
+
+    if (extracted.deckHeight_m !== undefined) {
+        if (state.service === 'decking' || extracted.service === 'decking') {
+            updated.deckHeight_m = extracted.deckHeight_m
+        }
+    }
+
     if (extracted.overgrown !== undefined) updated.overgrown = extracted.overgrown
     if (extracted.gateCount) updated.gateCount = extracted.gateCount
     if (extracted.wantsDrainage !== undefined) updated.wantsDrainage = extracted.wantsDrainage
     if (extracted.wantsLedLighting !== undefined) updated.wantsLedLighting = extracted.wantsLedLighting
     if (extracted.budgetAligns !== undefined) updated.budgetAligns = extracted.budgetAligns
 
-    // Only accept fullName if we are currently asking for it, OR if it's very clearly a name introduction
     const currentField = state.lastQuestionField || detectCurrentField(state)
     const isNameQuestion = currentField === 'fullName'
 
@@ -365,22 +366,36 @@ export function updateStateWithExtraction(
         updated.fullName = extracted.fullName
     }
 
-    if (extracted.userBudget !== undefined) updated.userBudget = extracted.userBudget
-    if (extracted.contactEmail) updated.contactEmail = extracted.contactEmail
-
-    // CRITICAL: Ensure phone is updated
-    if (extracted.contactPhone) {
-        updated.contactPhone = extracted.contactPhone
+    const isBudgetQuestion = currentField === 'userBudget'
+    if (extracted.userBudget !== undefined) {
+        if (isBudgetQuestion || extracted.explicitBudget) {
+            updated.userBudget = extracted.userBudget
+        }
     }
 
-    // Calculate area if dimensions provided
+    if (extracted.contactEmail) updated.contactEmail = extracted.contactEmail
+    if (extracted.contactPhone) updated.contactPhone = extracted.contactPhone
+    if (extracted.postalCode) {
+        // Strict UK Postcode Regex (Example: SL4 1AA)
+        const strictUkPattern = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/i
+        const isStrict = strictUkPattern.test(extracted.postalCode)
+
+        // Context-Aware Sieve:
+        // Only accept "loose" postcodes (like "3525" or "15 k" false positives)
+        // IF we are EXPLICITLY asking for the postcode.
+        if (isStrict || currentField === 'postalCode') {
+            updated.postalCode = extracted.postalCode
+        }
+    }
+
+    if (extracted.projectStartTiming) updated.projectStartTiming = extracted.projectStartTiming
+    if (extracted.groundSoilType) updated.groundSoilType = extracted.groundSoilType
+
     if (updated.length_m && updated.width_m && !updated.area_m2) {
         updated.area_m2 = updated.length_m * updated.width_m
     }
 
-    // Update certainty
     updated.certaintyLevel = calculateCertainty(updated)
-
     return updated
 }
 
@@ -388,9 +403,6 @@ export function updateStateWithExtraction(
 // RETRY TRACKING HELPERS
 // ============================================================================
 
-/**
- * Detect which field we're currently asking about based on conversation state
- */
 export function detectCurrentField(state: ConversationState): string {
     if (!state.service) return 'service'
     if (!state.area_m2 && !state.length_m && !state.width_m) return 'dimensions'
@@ -417,26 +429,19 @@ export function detectCurrentField(state: ConversationState): string {
         return 'demolition'
     }
 
-    // User information fields (collected before estimate)
     if (!state.fullName) return 'fullName'
     if (!state.contactPhone) return 'contactPhone'
     if (!state.contactEmail) return 'contactEmail'
     if (state.userBudget === null) return 'userBudget'
+    if (!state.postalCode) return 'postalCode'
 
     return 'unknown'
 }
 
-/**
- * Check if anything was extracted from the user's message
- */
 export function hasExtractedInfo(extracted: ExtractedInfo): boolean {
     return Object.keys(extracted).length > 0
 }
 
-/**
- * Check if the RELEVANT field for the current question was extracted
- * This prevents false positives where stray keywords trigger unrelated extractions
- */
 export function isRelevantFieldExtracted(
     currentField: string,
     extracted: ExtractedInfo,
@@ -444,75 +449,35 @@ export function isRelevantFieldExtracted(
     newState: ConversationState
 ): boolean {
     switch (currentField) {
-        case 'service':
-            return newState.service !== null && oldState.service === null
-
-        case 'dimensions':
-            return (newState.area_m2 !== null && oldState.area_m2 === null) ||
-                (newState.length_m !== null && oldState.length_m === null) ||
-                (newState.width_m !== null && oldState.width_m === null)
-
-        case 'materialTier':
-            return newState.materialTier !== null && oldState.materialTier === null
-
-        case 'excavatorAccess':
-            return newState.hasExcavatorAccess !== null && oldState.hasExcavatorAccess === null
-
-        case 'driveway':
-            return newState.hasDrivewayForSkip !== null && oldState.hasDrivewayForSkip === null
-
-        case 'slope':
-            return newState.slopeLevel !== null && oldState.slopeLevel === null
-
-        case 'demolition':
-            return newState.existingDemolition !== null && oldState.existingDemolition === null
-
-        case 'deckHeight':
-            return newState.deckHeight_m !== null && oldState.deckHeight_m === null
-
-        case 'overgrown':
-            return newState.overgrown !== null && oldState.overgrown === null
-
-        case 'gateCount':
-            return newState.gateCount !== null && oldState.gateCount === null
-
-        case 'fullName':
-            return newState.fullName !== null && oldState.fullName === null
-
-        case 'contactPhone':
-            return newState.contactPhone !== null && oldState.contactPhone === null
-
-        case 'contactEmail':
-            return newState.contactEmail !== null && oldState.contactEmail === null
-
-        case 'userBudget':
-            return newState.userBudget !== null && oldState.userBudget === null
-
-        default:
-            // For unknown fields, fall back to general extraction check
-            return hasExtractedInfo(extracted)
+        case 'service': return newState.service !== null && oldState.service === null
+        case 'dimensions': return (newState.area_m2 !== null && oldState.area_m2 === null) || (newState.length_m !== null && oldState.length_m === null)
+        case 'materialTier': return newState.materialTier !== null && oldState.materialTier === null
+        case 'excavatorAccess': return newState.hasExcavatorAccess !== null && oldState.hasExcavatorAccess === null
+        case 'driveway': return newState.hasDrivewayForSkip !== null && oldState.hasDrivewayForSkip === null
+        case 'slope': return newState.slopeLevel !== null && oldState.slopeLevel === null
+        case 'demolition': return newState.existingDemolition !== null && oldState.existingDemolition === null
+        case 'deckHeight': return newState.deckHeight_m !== null && oldState.deckHeight_m === null
+        case 'overgrown': return newState.overgrown !== null && oldState.overgrown === null
+        case 'gateCount': return newState.gateCount !== null && oldState.gateCount === null
+        case 'fullName': return newState.fullName !== null && oldState.fullName === null
+        case 'contactPhone': return newState.contactPhone !== null && oldState.contactPhone === null
+        case 'contactEmail': return newState.contactEmail !== null && oldState.contactEmail === null
+        case 'userBudget': return newState.userBudget !== null && oldState.userBudget === null
+        case 'postalCode': return newState.postalCode !== null && oldState.postalCode === null
+        default: return hasExtractedInfo(extracted)
     }
 }
 
-/**
- * Reset retry count (when extraction is successful)
- */
 export function incrementRetryCount(state: ConversationState, field: string): ConversationState {
     const currentCount = state.retryCount[field] || 0
     return {
         ...state,
-        retryCount: {
-            ...state.retryCount,
-            [field]: currentCount + 1
-        },
+        retryCount: { ...state.retryCount, [field]: currentCount + 1 },
         lastQuestionField: field,
-        showQuickReplies: currentCount >= 0 // Show quick replies after first failed attempt (0 becomes 1)
+        showQuickReplies: currentCount >= 0
     }
 }
 
-/**
- * Reset retry count (when extraction is successful)
- */
 export function resetRetryCount(state: ConversationState): ConversationState {
     return {
         ...state,
@@ -527,5 +492,31 @@ export function resetRetryCount(state: ConversationState): ConversationState {
 // ============================================================================
 
 export function isReadyForEstimate(state: ConversationState): boolean {
+    // 1. BASICS: Must have Budget and Postcode
+    if (state.userBudget === null || state.postalCode === null) return false
+
+    // 2. CRITICAL MISSING INFO CHECKS (Prevent skipping important cost factors)
+    const heavyAccessServices = ['hardscaping', 'decking', 'fencing', 'framing']
+    const groundServices = ['hardscaping', 'decking', 'softscaping', 'framing']
+
+    // Excavator Access is critical for pricing labor
+    if (state.hasExcavatorAccess === null && state.service && heavyAccessServices.includes(state.service)) {
+        return false
+    }
+
+    // Slope is critical for pricing groundworks
+    if (state.slopeLevel === null && state.service && groundServices.includes(state.service)) {
+        return false
+    }
+
+    // Gates for fencing
+    if (state.service === 'fencing' && state.gateCount === null) return false
+
+    // Deck height
+    if (state.service === 'decking' && state.deckHeight_m === null) return false
+
+    // 3. CERTAINTY CHECK
+    // If we have all the above, we are pretty good. 
+    // But still check the score just in case (e.g. Dimensions missing?)
     return state.certaintyLevel >= 85
 }

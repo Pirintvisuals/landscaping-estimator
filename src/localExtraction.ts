@@ -97,34 +97,67 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
         extracted.service = 'softscaping'
     }
 
-    // DIMENSIONS - Look for patterns
+    // DIMENSIONS - Look for patterns (Added comma support)
     const dimensionPatterns = [
-        /(\d+(?:\.\d+)?)\s*(?:m|meter|metre)?\s*(?:x|by|×)\s*(\d+(?:\.\d+)?)\s*(?:m|meter|metre)?/i,
-        /(\d+(?:\.\d+)?)\s*m\s*(?:x|by|×)\s*(\d+(?:\.\d+)?)/i
+        /(\d+(?:[.,]\d+)?)\s*(?:m|meter|metre)?\s*(?:x|by|×)\s*(\d+(?:[.,]\d+)?)\s*(?:m|meter|metre)?/i,
+        /(\d+(?:[.,]\d+)?)\s*m\s*(?:x|by|×)\s*(\d+(?:[.,]\d+)?)/i
     ]
 
     for (const pattern of dimensionPatterns) {
         const match = userMessage.match(pattern)
         if (match) {
-            extracted.length_m = parseFloat(match[1])
-            extracted.width_m = parseFloat(match[2])
+            extracted.length_m = parseFloat(match[1].replace(',', '.'))
+            extracted.width_m = parseFloat(match[2].replace(',', '.'))
             break
         }
     }
 
-    // Single area number
-    const areaPattern = /(\d+(?:\.\d+)?)\s*(?:square\s*)?(?:m|meter|metre|m2|m²|sqm)/i
-    const areaMatch = userMessage.match(areaPattern)
-    if (areaMatch && !extracted.length_m) {
-        extracted.area_m2 = parseFloat(areaMatch[1])
+    // DECK HEIGHT (Moved UP to prevent Area collision)
+    // Updated to handle plurals (meters/metres) and optional keywords, plus commas
+    // Regex now handles "0,8" "0.8" "0,8m" "0.8 meters" etc.
+    const heightPattern = /(\d+(?:[.,]\d+)?)\s*(?:m|meters?|metres?)?\s*(?:high|height|off\s*(?:the\s*)?ground)?/i
+    const heightMatch = userMessage.match(heightPattern)
+    let isHeight = false
+
+    // Only accept if it looks like a height answer (msg is short OR contains height keywords)
+    // AND explicitly does NOT look like a phone number or budget
+    if (heightMatch) {
+        // If implied height (no keywords), ensure we are asking for it or the value is small (< 3.0)
+        // This prevents "25" (area) from being seen as height
+        const val = parseFloat(heightMatch[1].replace(',', '.'))
+        const hasKeywords = msg.includes('high') || msg.includes('off') || msg.includes('ground')
+
+        if (hasKeywords || (val < 3.0 && val > 0)) {
+            if (val < 10) {
+                extracted.deckHeight_m = val
+                isHeight = true
+            }
+        }
+    } else if (msg.includes('ground level') || msg.includes('flush') || msg.includes('low')) {
+        extracted.deckHeight_m = 0.1
+        isHeight = true
     }
 
-    // Linear meters for fencing
-    const linearPattern = /(\d+(?:\.\d+)?)\s*(?:meter|metre|m)(?:s)?\s*(?:of\s*)?(?:fence|fencing)?/i
-    if (msg.includes('fence') || msg.includes('fencing')) {
-        const linearMatch = userMessage.match(linearPattern)
-        if (linearMatch) {
-            extracted.area_m2 = parseFloat(linearMatch[1])
+    // Single area number (Added comma support)
+    // CRITIAL FIX: Do NOT extract area if we just identified it as Height, OR if it has height keywords locally
+    if (!isHeight) {
+        const areaPattern = /(\d+(?:[.,]\d+)?)\s*(?:square\s*)?(?:m|meter|metre|m2|m²|sqm)\s*(?!high|deep|tall|off|thick)/i
+        const areaMatch = userMessage.match(areaPattern)
+
+        // Double check it's not actually a height saying "0.8m high" that the regex missed
+        const isActuallyHeight = msg.includes('high') || msg.includes('deep') || msg.includes('off the ground')
+
+        if (areaMatch && !extracted.length_m && !isActuallyHeight) {
+            extracted.area_m2 = parseFloat(areaMatch[1].replace(',', '.'))
+        }
+
+        // Linear meters for fencing
+        const linearPattern = /(\d+(?:[.,]\d+)?)\s*(?:meter|metre|m)(?:s)?\s*(?:of\s*)?(?:fence|fencing)?/i
+        if (msg.includes('fence') || msg.includes('fencing')) {
+            const linearMatch = userMessage.match(linearPattern)
+            if (linearMatch) {
+                extracted.area_m2 = parseFloat(linearMatch[1].replace(',', '.'))
+            }
         }
     }
 
@@ -291,19 +324,6 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
         extracted.existingDemolition = false
     }
 
-    // DECK HEIGHT
-    // Updated to handle plurals (meters/metres) and optional keywords
-    const heightPattern = /(\d+(?:\.\d+)?)\s*(?:m|meters?|metres?)?\s*(?:high|height|off\s*(?:the\s*)?ground)?/i
-    const heightMatch = userMessage.match(heightPattern)
-
-    // Only accept if it looks like a height answer (msg is short OR contains height keywords)
-    if (heightMatch && (
-        msg.includes('high') || msg.includes('height') ||
-        msg.includes('off') || msg.length < 10
-    )) {
-        extracted.deckHeight_m = parseFloat(heightMatch[1])
-    }
-
     // OVERGROWN - handles months, weeks, typos like 'agi'
     const weeksPattern = /(\d+)\s*week/i
     const monthsPattern = /(\d+)\s*month/i
@@ -354,44 +374,41 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
         msg.includes('too much') || msg.includes('expensive') || msg.includes('over budget') ||
         msg.includes('can\'t afford') || msg.includes('too high') || msg.includes('out of budget') ||
         msg.includes('more than') || msg.includes('exceeds') || msg.includes('not sure') ||
-        msg.includes('need to think') || msg.includes('discuss') || msg.includes('scope') ||
-        msg.includes('reduce') || msg.includes('lower')) {
+        msg.includes('need to think') || msg.includes('discuss') || msg.includes('reduce') ||
+        msg.includes('lower')) {
         extracted.budgetAligns = false
     }
 
-    // FULL NAME - capture everything as a name ONLY if we just asked for it
-    // We can't easily know "lastQuestion" here without passing state, 
-    // so we'll rely on the ConversationManager to filter this.
-    // BUT we should make this stricter to avoid false positives on "what services"
+    // FULL NAME - Relaxed validation
     const trimmedMsg = userMessage.trim()
     const nameKeywords = ['name is', 'call me', 'i am']
     const isExplicitName = nameKeywords.some(k => msg.includes(k))
-
-    // If it's a short string (2-3 words) and looks like a name, or has keywords
     const wordCount = trimmedMsg.split(' ').length
 
-    // STRICTER: Require at least 2 words for implicit names (e.g. "John Smith") 
-    // Single words are too risky (could be "patio", "yes", "what", etc.)
-    // Unless we have explicit keywords like "name is"
+    // Allow digits if it's explicitly a name or very short (typos like "mil4n")
+    // But still block obvious phone numbers (5+ digits)
+    const digitCount = (userMessage.match(/\d/g) || []).length
+    const looksLikePhone = digitCount > 5
 
-    // NEW: Check if the message contains digits - likely not a name if it has numbers
-    const hasDigits = /\d/.test(userMessage)
-
-    if ((isExplicitName || (wordCount <= 3 && wordCount >= 2)) &&
-        trimmedMsg.length > 3 && trimmedMsg.length < 50 &&
-        !hasDigits && // Block names with numbers (like phone numbers)
+    if ((isExplicitName || (wordCount <= 4 && wordCount >= 1)) && // Allow single names like "Milan"
+        trimmedMsg.length > 2 && trimmedMsg.length < 50 &&
+        !looksLikePhone &&
         !msg.includes('@') && !msg.includes('http') &&
         !msg.includes('what') && !msg.includes('how') &&
         !msg.includes('why') && !msg.includes('when')) {
         extracted.fullName = trimmedMsg
     }
 
-    // PHONE NUMBER - extremely permissive (allow any input with 5+ digits)
-    const digitOnly = userMessage.replace(/\D/g, '')
-
-    if (digitOnly.length >= 5) {
-        // Store the original input (trimmed) to preserve formatting like spaces/dashes
-        extracted.contactPhone = userMessage.trim()
+    // PHONE - UK formats
+    // 07xxx xxx xxx, +44 7xxx xxx xxx, 020 xxxx xxxx
+    const phonePattern = /(?:(?:\(?(?:0(?:0|11)\)?[\s-]?\(?|\+)44\)?[\s-]?(?:\(?0\)?[\s-]?)?)|(?:\(?0))(?:(?:\d{5}\)?[\s-]?\d{4,5})|(?:\d{4}\)?[\s-]?(?:\d{5}|\d{3}[\s-]?\d{3}))|(?:\d{3}\)?[\s-]?\d{3}[\s-]?\d{3,4})|(?:\d{2}\)?[\s-]?\d{4}[\s-]?\d{4}))(?:[\s-]?(?:x|ext\.?|\#)\d{3,4})?/
+    const phoneMatch = userMessage.match(phonePattern)
+    if (phoneMatch) {
+        // STRICT CHECK: Ensure at least 9 digits to avoid partial matches
+        const digits = phoneMatch[0].replace(/\D/g, '')
+        if (digits.length >= 9) {
+            extracted.contactPhone = phoneMatch[0]
+        }
     }
 
     // EMAIL - standard pattern
@@ -401,17 +418,59 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
         extracted.contactEmail = emailMatch[1].toLowerCase()
     }
 
-    // BUDGET - simple numeric/GBP detection
-    const budgetPattern = /(?:budget|is|about|around)?\s*[£$]?\s*(\d[\d,]*(?:\.\d{2})?)\s*(?:k|thousand)?/i
-    const budgetMatch = userMessage.match(budgetPattern)
-    if (budgetMatch) {
-        let amount = parseFloat(budgetMatch[1].replace(/,/g, ''))
-        if (msg.includes('k') || msg.includes('thousand')) amount *= 1000
+    // POSTCODE - Flexible to accept "3525", "SL4 1AA", etc.
+    // Matches 3-10 characters allowed in typical postcodes
+    // EXCLUDE common keywords that might be matched (budget, services, etc.)
+    const postcodePattern = /\b(?!(?:budget|about|around|price|cost|money|cheap|steep|slope|level|width|length|depth|high|tall|area|size)\b)([A-Za-z0-9\s]{3,10})\b/i
+    const postcodeMatch = userMessage.match(postcodePattern)
+    if (postcodeMatch) {
+        // Use the match, trimmed
+        const rawPostcode = postcodeMatch[1].trim().toUpperCase()
+        // Extra sanity check: minimal length 3
+        if (rawPostcode.length >= 3) {
+            extracted.postalCode = rawPostcode
+        }
+    }
 
-        // Sanity check: Budget should be reasonable (e.g., < 2,000,000)
-        // This prevents phone numbers (like 07700900000) from being parsed as valid budgets
-        if (amount > 100 && amount < 2000000) {
-            extracted.userBudget = amount
+    // BUDGET - Fix "Phone = Budget" bug
+    // 1. Must NOT be a phone number (unless it has explicit currency symbol)
+    // 2. Ignore numbers starting with '0' (like 0123...) unless it's exactly '0' or '0.5' etc OR has currency
+    const hasCurrency = msg.includes('£') || msg.includes('$') || msg.includes('euro') || msg.includes('budget')
+    const startsWithZero = /^\s*0\d/.test(msg) // Matches "01...", " 07..."
+
+    const isPhone = !!extracted.contactPhone
+
+    if (!isPhone || hasCurrency) {
+        const budgetPattern = /(?:budget|is|about|around)?\s*[£$]?\s*(\d+(?:[.,]\d+)?)\s*(?:k|thousand)?/i
+        const budgetMatch = userMessage.match(budgetPattern)
+
+        if (budgetMatch) {
+            // If it starts with 0 and NO currency, ignore it (likely a phone number part or date)
+            if (startsWithZero && !hasCurrency) {
+                // Ignore
+            } else {
+                let amount = parseFloat(budgetMatch[1].replace(',', '.').replace(/,/g, ''))
+                if (msg.includes('k') || msg.includes('thousand')) amount *= 1000
+
+                // GUARD: Check if the number is followed by measurement units
+                // exact match index + length of the full match
+                if (budgetMatch.index !== undefined) {
+                    const postMatch = userMessage.slice(budgetMatch.index + budgetMatch[0].length).trim().toLowerCase()
+                    const unitPattern = /^(m|sq|ft|cm|mm|x|by|meter|metre|deck|patio|paver|slab)/
+
+                    // If it's followed by a unit, specifically IGNORE it
+                    if (unitPattern.test(postMatch)) {
+                        // This is likely a dimension (e.g. "150 m2") or object count, NOT a budget
+                        return extracted
+                    }
+                }
+
+                // Sanity check: Budget should be reasonable
+                if (amount > 100 && amount < 2000000) {
+                    extracted.userBudget = amount
+                    extracted.explicitBudget = hasCurrency // Pass logic flag to Manager
+                }
+            }
         }
     }
 

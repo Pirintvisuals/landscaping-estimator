@@ -184,62 +184,34 @@ function roundGBP(value: number): number {
 
 export function generateReasoning(
   inputs: ProjectInputs,
-  surcharges: Surcharge[],
   laborMultiplierApplied: boolean
 ): string {
-  const reasons: string[] = []
+  const lines: string[] = []
 
-  // Material tier selection
+  // Materials
   const materialName = getMaterialName(inputs.service, inputs.materialTier)
-  const rate = UK_2026_RATES[inputs.service][inputs.materialTier].rate
-  reasons.push(
-    `${inputs.materialTier.charAt(0).toUpperCase() + inputs.materialTier.slice(1)} tier ${materialName} specified at £${rate}/m² (installed rate, inc. 20% markup + 7.1% 2026 uplift).`
-  )
+  lines.push(`Materials: ${inputs.materialTier.charAt(0).toUpperCase() + inputs.materialTier.slice(1)} tier ${materialName} specified. (Price includes 2026 porcelain/stone surcharge).`)
 
-  // Access restrictions
+  // Logistics
   if (laborMultiplierApplied) {
-    reasons.push(
-      'A 45% labor multiplier was applied due to restricted excavator access. Site width does not accommodate standard 90cm excavator; hand-labor and smaller equipment required.'
-    )
+    lines.push('Logistics: Restricted access multiplier applied (Manual excavation required; no 90cm digger access).')
+  } else {
+    lines.push('Logistics: Standard machinery access confirmed (Micro-digger efficiency rates applied).')
   }
 
-  // Skip logistics
-  if (!inputs.hasDrivewayForSkip) {
-    reasons.push(
-      `No driveway access for skip placement; £${SURCHARGES.councilPermit} council permit surcharge added for on-street waste management.`
-    )
-  }
-
-  // Slope grading
+  // Stability
   if (inputs.slopeLevel === 'steep') {
-    reasons.push(
-      `Site slope exceeds 15° threshold, requiring specialized grading equipment, terracing, and additional stability measures (£${SURCHARGES.steepSlopeGrading.toLocaleString()} surcharge).`
-    )
+    lines.push('Stability: Slope grading (>15°) requires specialized terracing equipment and retaining structures.')
+  } else if (inputs.slopeLevel === 'moderate') {
+    lines.push('Stability: Moderate grading required for proper drainage fall (1:80).')
+  } else {
+    lines.push('Stability: Standard ground preparation included.')
   }
 
-  // Demolition
-  const skipSurcharge = surcharges.find(s => s.label.includes('Demolition'))
-  if (skipSurcharge && inputs.existingDemolition) {
-    const skipCount = calculateSkipLoads(inputs.area_m2)
-    reasons.push(
-      `Demolition of existing ${inputs.subBaseType === 'hardscape' ? 'hardscape' : 'structure'} (${inputs.area_m2.toFixed(1)}m²) requires ${skipCount} skip load${skipCount > 1 ? 's' : ''} at £${SURCHARGES.skipLoad} each (based on 0.6 tons/m³ debris density, 0.15m average thickness).`
-    )
-  }
+  // Integrity (Always included)
+  lines.push('Integrity: 10% Project Management and 5% Contingency included for Windsor-tier QC standards.')
 
-  // High altitude
-  const altitudeSurcharge = surcharges.find(s => s.label.includes('High-altitude'))
-  if (altitudeSurcharge) {
-    reasons.push(
-      `Deck height exceeds 1.5m; mandatory scaffolding and lateral bracing required for safe construction (£${SURCHARGES.highAltitudeScaffolding.toLocaleString()} surcharge).`
-    )
-  }
-
-  // Closing statement
-  reasons.push(
-    'Final estimate includes 10% Project Management, 5% Contingency Reserve, and 15% Net Profit. Ballpark range presented at ±10% for preliminary scope definition.'
-  )
-
-  return reasons.join(' ')
+  return lines.join('\n\n')
 }
 
 /**
@@ -414,7 +386,7 @@ export function calculateUKEstimate(inputs: ProjectInputs): EstimateResult {
   // Generate Surveyor's Note
   // -------------------------------------------------------------------------
 
-  const reasoning = generateReasoning(inputs, surcharges, laborMultiplierApplied)
+  const reasoning = generateReasoning(inputs, laborMultiplierApplied)
 
   // Determine project status (VIP if > £5,000)
   const projectStatus = determineProjectStatus(estimate)
