@@ -420,12 +420,12 @@ function App() {
               return (
                 <div key={message.id} className="flex justify-start">
                   <div
-                    className="rounded-2xl p-4 max-w-[80%]"
+                    className="rounded-2xl p-4 max-w-[80%] shadow-sm"
                     style={{
-                      backgroundColor: isScarcityAlert ? '#FFA50020' : '#0B2B26',
-                      color: isScarcityAlert ? '#FFD700' : '#DAF1DE',
-                      border: isScarcityAlert ? '2px solid #FFA500' : '1px solid #1A3F3A',
-                      boxShadow: isScarcityAlert ? '0 0 20px rgba(255, 165, 0, 0.3)' : 'none'
+                      backgroundColor: isScarcityAlert ? '#FFF4E5' : '#FFFFFF',
+                      color: isScarcityAlert ? '#B45309' : '#051F20',
+                      border: isScarcityAlert ? '2px solid #F59E0B' : '1px solid #1F7A4A',
+                      boxShadow: isScarcityAlert ? '0 0 10px rgba(245, 158, 11, 0.2)' : '0 2px 5px rgba(0,0,0,0.05)'
                     }}
                   >
                     <p
@@ -433,7 +433,7 @@ function App() {
                       dangerouslySetInnerHTML={{
                         __html: DOMPurify.sanitize(message.content.replace(
                           /\[([^\]]+)\]\(([^\)]+)\)/g,
-                          '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #8EB69B; text-decoration: underline;">$1</a>'
+                          '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #1F7A4A; text-decoration: underline; font-weight: bold;">$1</a>'
                         ))
                       }}
                     />
@@ -446,11 +446,11 @@ function App() {
               return (
                 <div key={message.id} className="flex justify-end">
                   <div
-                    className="rounded-2xl p-4 max-w-[80%]"
+                    className="rounded-2xl p-4 max-w-[80%] shadow-sm"
                     style={{
-                      backgroundColor: '#8EB69B20',
-                      color: '#DAF1DE',
-                      border: '1px solid #8EB69B'
+                      backgroundColor: '#1F7A4A',
+                      color: '#FFFFFF',
+                      border: 'none'
                     }}
                   >
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -554,16 +554,16 @@ function App() {
                         style={{ borderColor: '#1A3F3A' }}
                       >
                         <div className="flex-1">
-                          <p className="text-sm font-medium" style={{ color: '#DAF1DE' }}>
+                          <p className="text-sm font-medium" style={{ color: '#374151' }}>
                             {item.label}
                           </p>
                           {item.note && (
-                            <p className="text-xs mt-1" style={{ color: '#6B8F7B' }}>
+                            <p className="text-xs mt-1" style={{ color: '#6B7280' }}>
                               {item.note}
                             </p>
                           )}
                         </div>
-                        <p className="text-sm font-semibold whitespace-nowrap" style={{ color: '#8EB69B' }}>
+                        <p className="text-sm font-semibold whitespace-nowrap" style={{ color: '#1F7A4A' }}>
                           {formatCurrencyGBP(item.amount)}
                         </p>
                       </div>
@@ -587,7 +587,7 @@ function App() {
                   </div>
 
                   {/* Disclaimer */}
-                  <p className="text-[10px] text-center mt-4 px-4 leading-tight opacity-60" style={{ color: '#8EB69B' }}>
+                  <p className="text-[10px] text-center mt-4 mx-4 p-3 rounded-lg leading-tight font-bold shadow-lg" style={{ color: '#1F7A4A', backgroundColor: '#F7F7F7', border: '1px solid #1F7A4A' }}>
                     This estimate is intended for guidance only and does not constitute a firm quote or legal contract. The "Calculated Project Cost" is a rough approximation based on typical 2026 material and labor rates. Final costs may fluctuate based on a formal site survey, specific material availability, and detailed project specifications.
                   </p>
 
@@ -721,9 +721,10 @@ function App() {
                   disabled={isProcessing}
                   className="quick-reply-btn rounded-lg px-4 py-2 text-sm font-medium transition-all hover:scale-105 disabled:opacity-50"
                   style={{
-                    backgroundColor: '#1A3F3A',
-                    color: '#DAF1DE',
-                    border: '1px solid #8EB69B'
+                    backgroundColor: '#FFFFFF',
+                    color: '#1F7A4A',
+                    border: '1px solid #1F7A4A',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                   }}
                 >
                   {reply.text}

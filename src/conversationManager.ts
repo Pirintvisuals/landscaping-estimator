@@ -360,14 +360,14 @@ export function updateStateWithExtraction(
     if (extracted.wantsLedLighting !== undefined) updated.wantsLedLighting = extracted.wantsLedLighting
     if (extracted.budgetAligns !== undefined) updated.budgetAligns = extracted.budgetAligns
 
-    const currentField = state.lastQuestionField || detectCurrentField(state)
-    const isNameQuestion = currentField === 'fullName'
+    const effectiveField = currentField || state.lastQuestionField || detectCurrentField(state)
+    const isNameQuestion = effectiveField === 'fullName'
 
     if (extracted.fullName && (isNameQuestion || extracted.fullName.toLowerCase().includes('name is'))) {
         updated.fullName = extracted.fullName
     }
 
-    const isBudgetQuestion = currentField === 'userBudget'
+    const isBudgetQuestion = effectiveField === 'userBudget'
     if (extracted.userBudget !== undefined) {
         if (isBudgetQuestion || extracted.explicitBudget) {
             updated.userBudget = extracted.userBudget
