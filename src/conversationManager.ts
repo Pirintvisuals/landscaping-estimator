@@ -323,7 +323,8 @@ export function generateAcknowledgment(_state: ConversationState, extracted: Ext
 
 export function updateStateWithExtraction(
     state: ConversationState,
-    extracted: ExtractedInfo
+    extracted: ExtractedInfo,
+    currentField?: string
 ): ConversationState {
     const updated = { ...state }
 

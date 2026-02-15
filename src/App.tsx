@@ -587,7 +587,7 @@ function App() {
                   </div>
 
                   {/* Disclaimer */}
-                  <p className="text-[10px] text-center mt-4 px-4 leading-tight opacity-50" style={{ color: '#6B8F7B' }}>
+                  <p className="text-[10px] text-center mt-4 px-4 leading-tight opacity-60" style={{ color: '#8EB69B' }}>
                     This estimate is intended for guidance only and does not constitute a firm quote or legal contract. The "Calculated Project Cost" is a rough approximation based on typical 2026 material and labor rates. Final costs may fluctuate based on a formal site survey, specific material availability, and detailed project specifications.
                   </p>
 
