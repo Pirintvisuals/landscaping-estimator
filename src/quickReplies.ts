@@ -18,39 +18,39 @@ export function getQuickReplies(state: ConversationState): QuickReply[] {
     if (state.service && !state.materialTier) {
         const tierReplies: Record<ServiceType, QuickReply[]> = {
             hardscaping: [
-                { text: 'Concrete (Budget)', value: 'basic concrete pavers' },
-                { text: 'Sandstone (Mid)', value: 'indian sandstone' },
-                { text: 'Porcelain (Premium)', value: 'porcelain paving' }
+                { text: 'Concrete (Essential)', value: 'basic concrete pavers' },
+                { text: 'Sandstone (Premium)', value: 'indian sandstone' },
+                { text: 'Porcelain (Luxury)', value: 'porcelain paving' }
             ],
             decking: [
-                { text: 'Softwood', value: 'treated softwood' },
-                { text: 'Composite', value: 'composite decking' },
-                { text: 'Hardwood', value: 'ipe hardwood' }
+                { text: 'Softwood (Essential)', value: 'treated softwood' },
+                { text: 'Composite (Premium)', value: 'composite decking' },
+                { text: 'Hardwood (Luxury)', value: 'ipe hardwood' }
             ],
             mowing: [
-                { text: 'Basic Cut', value: 'basic cut and collect' },
-                { text: 'Precision', value: 'precision cut with edging' },
-                { text: 'Full Service', value: 'full grounds maintenance' }
+                { text: 'Basic Cut (Essential)', value: 'basic cut and collect' },
+                { text: 'Precision (Premium)', value: 'precision cut with edging' },
+                { text: 'Full (Luxury)', value: 'full grounds maintenance' }
             ],
             planting: [
-                { text: 'Container Plants', value: 'container plants' },
-                { text: 'Specimens', value: 'specimen plants' },
-                { text: 'Architectural', value: 'architectural planting' }
+                { text: 'Container (Essential)', value: 'container plants' },
+                { text: 'Specimens (Premium)', value: 'specimen plants' },
+                { text: 'Architectural (Luxury)', value: 'architectural planting' }
             ],
             fencing: [
-                { text: 'Softwood', value: 'softwood panels' },
-                { text: 'Treated Slats', value: 'treated slats' },
-                { text: 'Cedar', value: 'premium cedar' }
+                { text: 'Softwood (Essential)', value: 'softwood panels' },
+                { text: 'Slats (Premium)', value: 'treated slats' },
+                { text: 'Cedar (Luxury)', value: 'premium cedar' }
             ],
             framing: [
-                { text: 'Basic Pergola', value: 'basic pergola frame' },
-                { text: 'Engineered', value: 'engineered timber' },
-                { text: 'Custom Hardwood', value: 'custom hardwood' }
+                { text: 'Basic (Essential)', value: 'basic pergola frame' },
+                { text: 'Engineered (Premium)', value: 'engineered timber' },
+                { text: 'Custom (Luxury)', value: 'custom hardwood' }
             ],
             softscaping: [
-                { text: 'Basic', value: 'basic landscaping' },
-                { text: 'Premium', value: 'premium planting' },
-                { text: 'Luxury', value: 'full architectural design' }
+                { text: 'Basic (Essential)', value: 'basic landscaping' },
+                { text: 'Premium (Premium)', value: 'premium planting' },
+                { text: 'Luxury (Luxury)', value: 'full architectural design' }
             ]
         }
         return tierReplies[state.service]
@@ -139,21 +139,21 @@ export function getFallbackQuickReplies(field: string, state: ConversationState)
         case 'materialTier':
             if (state.service === 'hardscaping') {
                 return [
-                    { text: 'Concrete (Budget)', value: 'basic concrete pavers' },
-                    { text: 'Sandstone (Mid)', value: 'indian sandstone' },
-                    { text: 'Porcelain (Premium)', value: 'porcelain paving' }
+                    { text: 'Concrete (Essential)', value: 'basic concrete pavers' },
+                    { text: 'Sandstone (Premium)', value: 'indian sandstone' },
+                    { text: 'Porcelain (Luxury)', value: 'porcelain paving' }
                 ]
             } else if (state.service === 'decking') {
                 return [
-                    { text: 'Softwood', value: 'treated softwood' },
-                    { text: 'Composite', value: 'composite decking' },
-                    { text: 'Hardwood', value: 'ipe hardwood' }
+                    { text: 'Softwood (Essential)', value: 'treated softwood' },
+                    { text: 'Composite (Premium)', value: 'composite decking' },
+                    { text: 'Hardwood (Luxury)', value: 'ipe hardwood' }
                 ]
             } else {
                 return [
-                    { text: 'Budget', value: 'budget option' },
-                    { text: 'Mid-Range', value: 'mid range' },
-                    { text: 'Premium', value: 'premium quality' }
+                    { text: 'Essential', value: 'essential option' },
+                    { text: 'Premium', value: 'premium quality' },
+                    { text: 'Luxury', value: 'luxury ' }
                 ]
             }
 

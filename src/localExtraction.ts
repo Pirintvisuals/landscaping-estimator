@@ -10,6 +10,10 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
     const msg = userMessage.toLowerCase()
     const extracted: ExtractedInfo = {}
 
+    // Driveway/Access/Excavator logic helpers (Affirmative/Negative)
+    const isAffirmative = (msg === 'yes' || msg === 'yep' || msg === 'yeah' || msg === 'yeh' || msg === 'ye' || msg === 'sure' || msg === 'ok' || msg.includes('yeah') || msg.includes('definitely') || msg.includes('absolutely') || msg.includes('of course'))
+    const isNegative = (msg === 'no' || msg === 'nope' || msg === 'nah' || msg === 'na' || msg.includes('no ') || msg.includes('not really'))
+
     // SERVICE DETECTION - MASSIVELY EXPANDED with typos, phonetic, and colloquial terms
 
     // HARDSCAPING - patio, paving, stonework
@@ -88,7 +92,8 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
     }
     // SOFTSCAPING - general landscaping
     else if (msg.includes('landscape') || msg.includes('garden') || msg.includes('landscaping') ||
-        // Typos
+        // Typos & Spaces - CRITICAL FIX
+        msg.includes('land scape') || msg.includes('land scaping') || msg.includes('soft scape') || msg.includes('soft scaping') ||
         msg.includes('landscpaing') || msg.includes('landscpe') || msg.includes('lanscaping') ||
         msg.includes('gardn') || msg.includes('gardning') || msg.includes('gardan') ||
         // Related
@@ -164,7 +169,7 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
     // MATERIAL TIER - MASSIVELY EXPANDED with natural language and price expressions
     // Plus specific material names from service questions
 
-    // STANDARD/BUDGET tier
+    // STANDARD/ESSENTIAL tier
     if (msg.includes('cheap') || msg.includes('budget') || msg.includes('basic') ||
         // Specific materials (STANDARD tier)
         msg.includes('softwood') || msg.includes('soft wood') || msg.includes('softwood panel') ||
@@ -183,22 +188,23 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
         msg.includes('affordable') || msg.includes('economical') || msg.includes('cost effective') ||
         msg.includes('on a budget') || msg.includes('save money') || msg.includes('inexpensive') ||
         msg.includes('value') || msg.includes('reasonable price') || msg.includes('not expensive') ||
-        msg.includes('lower cost') || msg.includes('entry level') || msg.includes('starter')) {
+        msg.includes('lower cost') || msg.includes('entry level') || msg.includes('starter') ||
+        msg.includes('essential')) {
         extracted.materialTier = 'standard'
     }
-    // LUXURY/PREMIUM tier
-    else if (msg.includes('premium') || msg.includes('luxury') || msg.includes('high-end') ||
+    // LUXURY tier (Top)
+    else if (msg.includes('luxury') || msg.includes('high-end') ||
         // Specific materials (LUXURY tier)
-        msg.includes('ipe') || msg.includes('hardwood') || msg.includes('ipe hardwood') ||
+        msg.includes('ipe') || msg.includes('hardwood') || msg.includes('hard wood') || msg.includes('ipe hardwood') ||
         msg.includes('porcelain') || msg.includes('porcelain paving') ||
         msg.includes('cedar') || msg.includes('premium cedar') ||
         msg.includes('full grounds') || msg.includes('full maintenance') ||
         msg.includes('architectural') || msg.includes('architectural planting') ||
         msg.includes('custom hardwood') || msg.includes('full architectural design') ||
         // General terms
-        msg.includes('best') || msg.includes('top') || msg.includes('premium quality') ||
+        msg.includes('best') || msg.includes('top') ||
         // Typos
-        msg.includes('premum') || msg.includes('luxary') || msg.includes('luxry') || msg.includes('preimum') ||
+        msg.includes('luxary') || msg.includes('luxry') ||
         msg.includes('porcelin') || msg.includes('ceadar') ||
         // Natural language
         msg.includes('high quality') || msg.includes('top quality') || msg.includes('top tier') ||
@@ -208,7 +214,7 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
         msg.includes('best quality') || msg.includes('nothing but the best') || msg.includes('spare no expense')) {
         extracted.materialTier = 'luxury'
     }
-    // PREMIUM/MID-RANGE tier
+    // PREMIUM tier (Mid/Middle)
     else if (msg.includes('composite') || msg.includes('sandstone') || msg.includes('mid') ||
         // Specific materials (PREMIUM/MID tier)
         msg.includes('composite decking') || msg.includes('indian sandstone') ||
@@ -219,9 +225,10 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
         msg.includes('premium planting') || msg.includes('premium specimen') ||
         // General terms
         msg.includes('decent') || msg.includes('good quality') || msg.includes('middle') ||
+        msg.includes('premium') || // "Premium" now maps to this middle tier per user request
         // Typos
         msg.includes('composit') || msg.includes('sandston') || msg.includes('decnt') ||
-        msg.includes('speciman') || msg.includes('enginered') ||
+        msg.includes('speciman') || msg.includes('enginered') || msg.includes('premum') || msg.includes('preimum') ||
         // Natural language
         msg.includes('mid-range') || msg.includes('mid range') || msg.includes('middle of the road') ||
         msg.includes('good but not crazy') || msg.includes('reasonable quality') ||
@@ -233,8 +240,7 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
     if (msg.includes('narrow') || msg.includes('small gate') || msg.includes('70cm') ||
         msg.includes('80cm') || msg.includes('tight') || msg.includes('won\'t fit') ||
         msg.includes('can\'t') ||
-        // Simple no responses - use exact match to avoid conflicts
-        (msg.trim() === 'no' || msg.trim() === 'nope' || msg.trim() === 'nah' || msg.trim() === 'na') ||
+        isNegative ||
         // Natural language negative
         msg.includes('too narrow') || msg.includes('not wide enough') || msg.includes('restricted') ||
         msg.includes('limited access') || msg.includes('difficult access') || msg.includes('no access') ||
@@ -242,9 +248,8 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
         msg.includes('side passage') || msg.includes('alley') || msg.includes('not sure')) {
         extracted.hasExcavatorAccess = false
     } else if (msg.includes('wide') || msg.includes('good access') ||
-        // Simple yes responses - use exact match
-        (msg.trim() === 'yes' || msg.trim() === 'yep' || msg.trim() === 'yeah' || msg.trim() === 'yeh') ||
-        msg.includes('sure') || msg.includes('fits') || msg.includes('it fits') ||
+        isAffirmative ||
+        msg.includes('fits') || msg.includes('it fits') ||
         msg.includes('there is') || msg.includes('it can') ||
         // Natural language positive
         msg.includes('plenty of room') || msg.includes('easy access') || msg.includes('wide enough') ||
@@ -253,19 +258,18 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
         extracted.hasExcavatorAccess = true
     }
 
+
     // DRIVEWAY - expanded
     if (msg.includes('no driveway') || msg.includes('street') || msg.includes('on the road') ||
         msg.includes('no drive') ||
-        // Simple no responses
-        (msg.trim() === 'no' || msg.trim() === 'nope' || msg.trim() === 'nah' || msg.trim() === 'na') ||
+        isNegative ||
         // Natural language
         msg.includes('on street') || msg.includes('road parking') || msg.includes('street parking') ||
         msg.includes('permit') || msg.includes('public road') || msg.includes('haven\'t got') ||
         msg.includes('don\'t have')) {
         extracted.hasDrivewayForSkip = false
     } else if (msg.includes('driveway') || msg.includes('parking') ||
-        // Simple yes responses
-        (msg.trim() === 'yes' || msg.trim() === 'yep' || msg.trim() === 'yeah' || msg.trim() === 'yeh') ||
+        isAffirmative ||
         msg.includes('have a drive') ||
         // Natural language
         msg.includes('got a drive') || msg.includes('front drive') || msg.includes('off street') ||
@@ -301,8 +305,7 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
     // DEMOLITION - very flexible with natural language
     if (msg.includes('remove') || msg.includes('tear out') || msg.includes('demolish') ||
         msg.includes('existing') ||
-        // Simple yes responses - exact match
-        (msg.trim() === 'yes' || msg.trim() === 'yep' || msg.trim() === 'yeah' || msg.trim() === 'yeh') ||
+        isAffirmative ||
         msg.includes('a little') || msg.includes('some ') || msg.includes('need to remove') ||
         msg.includes('demolish needed') || msg.includes('bit of') || msg.includes('old') ||
         // Typos
@@ -315,8 +318,7 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
         extracted.existingDemolition = true
     } else if (msg.includes('new') || msg.includes('fresh') || msg.includes('no removal') ||
         msg.includes('nothing') || msg.includes('clean') ||
-        // Simple no responses - exact match
-        (msg.trim() === 'no' || msg.trim() === 'nope' || msg.trim() === 'nah' || msg.trim() === 'na') ||
+        isNegative ||
         // Natural language
         msg.includes('fresh start') || msg.includes('blank slate') || msg.includes('bare ground') ||
         msg.includes('empty') || msg.includes('clear') || msg.includes('nothing there') ||

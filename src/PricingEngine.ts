@@ -52,26 +52,26 @@ export interface PricedEstimate extends BaselineEstimate {
 }
 
 /** General crew labor rate used for all labor line items. */
-export const GENERAL_CREW_LABOR_RATE_PER_HOUR = 75
+export const GENERAL_CREW_LABOR_RATE_PER_HOUR = 120
 
-/** 20% material markup is baked into each 'installed' catalog unit price (not a separate line). */
-export const MATERIALS_MARKUP_BAKED_IN = 0.2
+/** 40% material markup is baked into each 'installed' catalog unit price (not a separate line). */
+export const MATERIALS_MARKUP_BAKED_IN = 0.4
 
 export const PROFIT_AND_FEES = {
-  projectManagementRate: 0.1,
-  contingencyRate: 0.05,
-  netProfitRate: 0.15,
+  projectManagementRate: 0.15,
+  contingencyRate: 0.08,
+  netProfitRate: 0.20,
 } as const
 
 export interface CatalogItem {
   id: string
   category:
-    | 'site_prep_drainage'
-    | 'premium_turf_lawn'
-    | 'hardscape_outdoor_living'
-    | 'structures_retention'
-    | 'specimen_planting'
-    | 'finishing_touches'
+  | 'site_prep_drainage'
+  | 'premium_turf_lawn'
+  | 'hardscape_outdoor_living'
+  | 'structures_retention'
+  | 'specimen_planting'
+  | 'finishing_touches'
   label: string
   unit: CatalogUnit
   unitPrice: number
@@ -366,12 +366,12 @@ const DEFAULT_ASSUMED_LINEAR_FT: Record<ProjectSize, number> = {
 }
 
 const DEFAULT_ASSUMED_CREW_HOURS: Record<ServiceType, Record<ProjectSize, number>> =
-  {
-    landscaping: { small: 12, medium: 20, large: 36 },
-    hardscaping: { small: 24, medium: 48, large: 80 },
-    framing: { small: 30, medium: 60, large: 100 },
-    mowing: { small: 1.5, medium: 2.5, large: 4.5 },
-  }
+{
+  landscaping: { small: 12, medium: 20, large: 36 },
+  hardscaping: { small: 24, medium: 48, large: 80 },
+  framing: { small: 30, medium: 60, large: 100 },
+  mowing: { small: 1.5, medium: 2.5, large: 4.5 },
+}
 
 function toValidProjectSize(size: unknown): ProjectSize {
   if (size === 'small' || size === 'medium' || size === 'large') return size

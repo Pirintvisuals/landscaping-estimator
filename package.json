@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "start": "npm run build && wrangler pages dev dist --live-reload",
+    "dev:cf": "npm run build && wrangler pages dev dist --live-reload",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy:cf": "npm run build && wrangler pages deploy dist --project-name=estimator-agent"
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=estimator-agent"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -95,7 +95,9 @@ export interface ExtractedInfo {
     contactPhone?: string
     projectStartTiming?: string
     groundSoilType?: string
+    groundSoilType?: string
     explicitBudget?: boolean // True if input had currency symbols or 'budget' keyword
+    agentResponse?: string   // Natural language response from AI
 }
 
 // ============================================================================
@@ -210,19 +212,26 @@ export function getNextQuestion(state: ConversationState): string | null {
     // Priority 3: Material tier
     if (!state.materialTier) {
         const tierQuestions: Record<ServiceType, string> = {
-            hardscaping: "What material are you considering? Options range from concrete pavers (budget-friendly) to Indian sandstone (mid-range) to porcelain paving (premium).",
-            decking: "What material are you considering—softwood, composite, or hardwood like Ipe?",
-            softscaping: "What level of landscaping are you thinking? Basic planting, premium specimens, or full architectural design?",
-            mowing: "What level of service do you need? Basic cut and collect, precision cut with edging, or full grounds maintenance?",
-            planting: "What type of plants are you thinking about? Container plants, specimen plants, or architectural planting?",
-            fencing: "What material are you considering? Softwood panels, treated slats, or premium cedar?",
-            framing: "What type of structure? Basic pergola frame, engineered timber, or custom hardwood?"
+            hardscaping: "What material are you considering? Options range from concrete pavers (Essential) to Indian sandstone (Premium) to porcelain paving (Luxury).",
+            decking: "What material are you considering—softwood (Essential), composite (Premium), or hardwood like Ipe (Luxury)?",
+            softscaping: "What level of landscaping are you thinking? Basic planting (Essential), specimen plants (Premium), or full architectural design (Luxury)?",
+            mowing: "What level of service do you need? Basic cut and collect (Essential), precision cut with edging (Premium), or full grounds maintenance (Luxury)?",
+            planting: "What type of plants are you thinking about? Container plants (Essential), specimen plants (Premium), or architectural planting (Luxury)?",
+            fencing: "What material are you considering? Softwood panels (Essential), treated slats (Premium), or premium cedar (Luxury)?",
+            framing: "What type of structure? Basic pergola frame (Essential), engineered timber (Premium), or custom hardwood (Luxury)?"
         }
         return tierQuestions[state.service]
     }
 
-    // Priority 4: Site access
+    // Priority 4: Site access - CRITICAL FLOW FIX
+    // If we know the slope (or it was just mentioned), we MUST ask about access next if unknown.
     const excavationServices = ['hardscaping', 'decking', 'fencing', 'framing']
+
+    // Check if slope is known but access is NOT known
+    if (state.slopeLevel && state.hasExcavatorAccess === null && state.service && excavationServices.includes(state.service)) {
+        return "With that slope, access is key. Is there a way for a small digger (about 90cm wide) to get into the garden, or is the gate narrower?"
+    }
+
     if (state.hasExcavatorAccess === null && state.service && excavationServices.includes(state.service)) {
         return "Is there a way for a small digger (about 90cm wide) to get into your garden, or is the gate narrower than that?"
     }
@@ -293,9 +302,9 @@ export function generateAcknowledgment(_state: ConversationState, extracted: Ext
         const area = extracted.area_m2 || (extracted.length_m! * extracted.width_m!)
         acks.push(`So roughly ${area.toFixed(0)} square meters.`)
     }
-    if (extracted.materialTier === 'luxury') acks.push("Premium choice—that'll look stunning.")
-    else if (extracted.materialTier === 'premium') acks.push("Solid mid-range option with great longevity.")
-    else if (extracted.materialTier === 'standard') acks.push("Good budget-friendly option.")
+    if (extracted.materialTier === 'luxury') acks.push("Luxury choice—that'll look stunning.")
+    else if (extracted.materialTier === 'premium') acks.push("Solid Premium option with great longevity.")
+    else if (extracted.materialTier === 'standard') acks.push("Good Essential option.")
 
     if (extracted.hasExcavatorAccess === false && _state.hasExcavatorAccess === null) {
         acks.push("Since the access is narrow, I'll need to factor in manual labor for the excavation phase.")
@@ -355,7 +364,7 @@ export function updateStateWithExtraction(
     }
 
     if (extracted.overgrown !== undefined) updated.overgrown = extracted.overgrown
-    if (extracted.gateCount) updated.gateCount = extracted.gateCount
+    if (extracted.gateCount !== undefined) updated.gateCount = extracted.gateCount
     if (extracted.wantsDrainage !== undefined) updated.wantsDrainage = extracted.wantsDrainage
     if (extracted.wantsLedLighting !== undefined) updated.wantsLedLighting = extracted.wantsLedLighting
     if (extracted.budgetAligns !== undefined) updated.budgetAligns = extracted.budgetAligns

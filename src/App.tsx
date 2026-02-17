@@ -34,8 +34,12 @@ function App() {
   const [sendingEmail, setSendingEmail] = useState(false)
 
   // Auto-scroll to bottom when new messages appear
+  // Auto-scroll to bottom when new messages appear
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesEndRef.current) {
+      // scrollIntoView is smoother and handles nested scrolling better than scrollTop
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }
   }, [state.messageHistory])
 
   // Send initial greeting on mount
@@ -183,10 +187,9 @@ function App() {
       const currentField = detectCurrentField(state)
       const relevantFieldFound = isRelevantFieldExtracted(currentField, extracted, state, updateStateWithExtraction(state, extracted, currentField))
 
-      // Heuristic: If we found what we asked for, OR confidence is high (>50), OR it's a simple yes/no/number
-      // Then use local data and skip the slow API call.
-      const useLocalOnly = relevantFieldFound || localConfidence > 50 ||
-        /^(yes|no|yep|nope|\d+(\.\d+)?)$/i.test(sanitizedInput)
+      // FORCE API USAGE: The user wants "Gemini thinking base" for everything.
+      // We still run local first as a baseline, but we ALWAYS call the API to enhance/correct it.
+      const useLocalOnly = false // relevantFieldFound || localConfidence > 50 || ... (Disabled per request)
 
       if (useLocalOnly) {
         console.log('⚡ Using local extraction (Fast Mode)', extracted)
@@ -254,7 +257,15 @@ function App() {
 
       // Build agent response
       let agentContent = ''
-      if (ack) agentContent += ack + ' '
+
+      // 1. USE AI RESPONSE IF AVAILABLE (Smartest)
+      if (extracted.agentResponse) {
+        agentContent = extracted.agentResponse
+      }
+      // 2. FALLBACK TO LOCAL LOGIC (If API didn't return a reply)
+      else {
+        if (ack) agentContent += ack + ' '
+      }
 
       // Check if ready for estimate
       if (isReadyForEstimate(stateWithRetry) && !nextQ) {
@@ -410,7 +421,7 @@ function App() {
       </header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4" ref={messagesEndRef}>
         <div className="mx-auto max-w-4xl space-y-4">
           {state.messageHistory.map((message) => {
             if (message.role === 'agent') {
@@ -671,7 +682,7 @@ function App() {
             </div>
           )}
 
-          <div ref={messagesEndRef} />
+
         </div>
       </div>
 
@@ -687,6 +698,14 @@ function App() {
           <form onSubmit={handleSend} className="flex gap-3">
             <input
               type="text"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (!isProcessing && input.trim()) {
+                    handleSend(e as unknown as React.FormEvent)
+                  }
+                }
+              }}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
