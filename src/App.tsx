@@ -178,18 +178,18 @@ function App() {
 
       // 1. Try LOCAL EXTRACTION first (Fastest)
       // We import dynamically to keep initial bundle small, though for this size it's negligible
-      const { extractLocalInformation, calculateConfidence } = await import('./localExtraction')
+      const { extractLocalInformation } = await import('./localExtraction')
       extracted = extractLocalInformation(userMessage.content)
-      const localConfidence = calculateConfidence(extracted)
+      // const localConfidence = calculateConfidence(extracted) // Unused
+
 
       // 2. Decide if we need the API
       // If we found the CURRENTLY requested field, or confidence is high, skip API
       const currentField = detectCurrentField(state)
-      const relevantFieldFound = isRelevantFieldExtracted(currentField, extracted, state, updateStateWithExtraction(state, extracted, currentField))
 
       // FORCE API USAGE: The user wants "Gemini thinking base" for everything.
       // We still run local first as a baseline, but we ALWAYS call the API to enhance/correct it.
-      const useLocalOnly = false // relevantFieldFound || localConfidence > 50 || ... (Disabled per request)
+      const useLocalOnly = false // (Disabled per request)
 
       if (useLocalOnly) {
         console.log('⚡ Using local extraction (Fast Mode)', extracted)

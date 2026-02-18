@@ -95,7 +95,6 @@ export interface ExtractedInfo {
     contactPhone?: string
     projectStartTiming?: string
     groundSoilType?: string
-    groundSoilType?: string
     explicitBudget?: boolean // True if input had currency symbols or 'budget' keyword
     agentResponse?: string   // Natural language response from AI
 }
