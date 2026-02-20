@@ -13,7 +13,7 @@ import {
   type ConversationState,
   type ExtractedInfo
 } from './conversationManager'
-import { getFallbackQuickReplies, type QuickReply } from './quickReplies'
+import { getFallbackQuickReplies, getQuickReplies, WRITE_IT_OUT, type QuickReply } from './quickReplies'
 import {
   calculateUKEstimate,
   formatCurrencyGBP,
@@ -30,6 +30,7 @@ function App() {
   const [estimate, setEstimate] = useState<EstimateResult | null>(null)
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [emailSent, setEmailSent] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
 
@@ -344,6 +345,10 @@ function App() {
   }
 
   const handleQuickReply = (value: string) => {
+    if (value === WRITE_IT_OUT) {
+      inputRef.current?.focus()
+      return
+    }
     // Simulate user typing the quick reply value
     setInput(value)
     // Trigger form submission programmatically
@@ -404,6 +409,8 @@ function App() {
       }))
     }
   }
+
+  const activeReplies = state.showQuickReplies ? quickReplies : getQuickReplies(state)
 
   return (
     <div className="flex min-h-screen flex-col" style={{ backgroundColor: '#051F20' }}>
@@ -514,6 +521,13 @@ function App() {
                         <span className="text-sm font-semibold" style={{ color: '#051F20' }}>Your Budget:</span>
                         <span className="text-sm font-bold" style={{ color: '#051F20' }}>
                           {state.userBudget ? formatCurrencyGBP(state.userBudget) : 'N/A'}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center pb-2 border-b" style={{ borderColor: isVIP ? '#FFA500' : '#6B8F7B' }}>
+                        <span className="text-sm font-semibold" style={{ color: '#051F20' }}>Timeline:</span>
+                        <span className="text-sm font-bold" style={{ color: '#051F20' }}>
+                          {state.projectStartTiming || 'N/A'}
                         </span>
                       </div>
 
@@ -697,6 +711,7 @@ function App() {
         <div className="mx-auto max-w-4xl">
           <form onSubmit={handleSend} className="flex gap-3">
             <input
+              ref={inputRef}
               type="text"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -730,10 +745,10 @@ function App() {
             </button>
           </form>
 
-          {/* Quick Reply Buttons - shown when bot doesn't understand */}
-          {state.showQuickReplies && quickReplies.length > 0 && (
+          {/* Quick Reply Buttons - shown immediately for certain fields, or on retry for others */}
+          {activeReplies.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {quickReplies.map((reply, index) => (
+              {activeReplies.map((reply, index) => (
                 <button
                   key={index}
                   onClick={() => handleQuickReply(reply.value)}

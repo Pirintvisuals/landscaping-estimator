@@ -69,6 +69,7 @@ export interface ConversationState {
     // New fields per user request
     projectStartTiming: string | null
     groundSoilType: string | null
+    additionalNotes: string | null
 }
 
 export interface ExtractedInfo {
@@ -97,6 +98,7 @@ export interface ExtractedInfo {
     groundSoilType?: string
     explicitBudget?: boolean // True if input had currency symbols or 'budget' keyword
     agentResponse?: string   // Natural language response from AI
+    additionalNotes?: string
 }
 
 // ============================================================================
@@ -133,7 +135,8 @@ export function createInitialState(): ConversationState {
         userBudget: null,
         postalCode: null,
         projectStartTiming: null,
-        groundSoilType: null
+        groundSoilType: null,
+        additionalNotes: null
     }
 }
 
@@ -271,6 +274,9 @@ export function getNextQuestion(state: ConversationState): string | null {
     if (state.userBudget === null) {
         return "What budget have you set aside for this project? This helps me understand if we're aligned."
     }
+    if (!state.projectStartTiming) {
+        return "When are you looking to get started?"
+    }
     if (!state.postalCode) {
         return "Finally, what's the postcode for the project address?"
     }
@@ -399,6 +405,11 @@ export function updateStateWithExtraction(
 
     if (extracted.projectStartTiming) updated.projectStartTiming = extracted.projectStartTiming
     if (extracted.groundSoilType) updated.groundSoilType = extracted.groundSoilType
+    if (extracted.additionalNotes) {
+        updated.additionalNotes = updated.additionalNotes
+            ? updated.additionalNotes + '\n' + extracted.additionalNotes
+            : extracted.additionalNotes
+    }
 
     if (updated.length_m && updated.width_m && !updated.area_m2) {
         updated.area_m2 = updated.length_m * updated.width_m
@@ -442,6 +453,7 @@ export function detectCurrentField(state: ConversationState): string {
     if (!state.contactPhone) return 'contactPhone'
     if (!state.contactEmail) return 'contactEmail'
     if (state.userBudget === null) return 'userBudget'
+    if (!state.projectStartTiming) return 'projectStartTiming'
     if (!state.postalCode) return 'postalCode'
 
     return 'unknown'
@@ -472,6 +484,7 @@ export function isRelevantFieldExtracted(
         case 'contactPhone': return newState.contactPhone !== null && oldState.contactPhone === null
         case 'contactEmail': return newState.contactEmail !== null && oldState.contactEmail === null
         case 'userBudget': return newState.userBudget !== null && oldState.userBudget === null
+        case 'projectStartTiming': return !!newState.projectStartTiming && !oldState.projectStartTiming
         case 'postalCode': return newState.postalCode !== null && oldState.postalCode === null
         default: return hasExtractedInfo(extracted)
     }

@@ -13,7 +13,36 @@ export interface QuickReply {
     value: string
 }
 
+export const WRITE_IT_OUT = '__write_it_out__'
+
+function withWriteItOut(replies: QuickReply[]): QuickReply[] {
+    return [...replies, { text: "I'll write it out", value: WRITE_IT_OUT }]
+}
+
 export function getQuickReplies(state: ConversationState): QuickReply[] {
+    // Service question (first question)
+    if (!state.service) {
+        return withWriteItOut([
+            { text: '🏗️ Patio / Paving', value: 'patio' },
+            { text: '🪵 Decking', value: 'decking' },
+            { text: '🌿 Lawn Mowing', value: 'lawn mowing' },
+            { text: '🌱 Landscaping', value: 'landscaping' },
+            { text: '🪴 Planting', value: 'planting' },
+            { text: '🚧 Fencing', value: 'fencing' },
+            { text: '🏛️ Pergola / Structure', value: 'pergola' }
+        ])
+    }
+
+    // Dimensions question — no preset buttons, just write it out
+    if (!state.area_m2 && !state.length_m && !state.width_m) {
+        return withWriteItOut([
+            { text: 'Small (< 20m²)', value: '15 square meters' },
+            { text: 'Medium (20–50m²)', value: '35 square meters' },
+            { text: 'Large (50–100m²)', value: '75 square meters' },
+            { text: 'Very large (> 100m²)', value: '120 square meters' }
+        ])
+    }
+
     // Material tier questions
     if (state.service && !state.materialTier) {
         const tierReplies: Record<ServiceType, QuickReply[]> = {
@@ -53,58 +82,79 @@ export function getQuickReplies(state: ConversationState): QuickReply[] {
                 { text: 'Luxury (Luxury)', value: 'full architectural design' }
             ]
         }
-        return tierReplies[state.service]
+        return withWriteItOut(tierReplies[state.service])
     }
 
     // Excavator access (yes/no)
     if (state.hasExcavatorAccess === null && state.service && state.service !== 'mowing') {
-        return [
+        return withWriteItOut([
             { text: 'Yes, it fits', value: 'yes it fits' },
             { text: 'No, narrow access', value: 'narrow access' }
-        ]
+        ])
     }
 
     // Driveway (yes/no)
     if (state.hasDrivewayForSkip === null && state.service && state.service !== 'mowing') {
-        return [
+        return withWriteItOut([
             { text: 'Yes, have driveway', value: 'yes driveway' },
             { text: 'No, on street', value: 'on the street' }
-        ]
+        ])
     }
 
     // Slope level
     if (state.slopeLevel === null && state.service && state.service !== 'mowing') {
-        return [
+        return withWriteItOut([
             { text: 'Flat', value: 'flat' },
             { text: 'Moderate slope', value: 'moderate slope' },
             { text: 'Steep', value: 'steep slope' }
-        ]
+        ])
     }
 
     // Demolition (yes/no)
     if (state.existingDemolition === null && state.service &&
         (state.service === 'hardscaping' || state.service === 'decking')) {
-        return [
+        return withWriteItOut([
             { text: 'Yes, removal needed', value: 'yes removal needed' },
             { text: 'No, fresh site', value: 'no nothing to remove' }
-        ]
+        ])
     }
 
     // Fencing gates
     if (state.service === 'fencing' && state.gateCount === null) {
-        return [
+        return withWriteItOut([
             { text: 'No gates', value: 'no gates' },
             { text: '1 gate', value: 'one gate' },
             { text: '2 gates', value: 'two gates' }
-        ]
+        ])
     }
 
     // Mowing overgrowth
     if (state.service === 'mowing' && state.overgrown === null) {
-        return [
+        return withWriteItOut([
             { text: 'Recent (< 2 weeks)', value: 'last week' },
             { text: 'Overgrown (> 2 weeks)', value: '3 weeks ago' }
-        ]
+        ])
+    }
+
+    // Budget (user info section)
+    if (state.userBudget === null && state.contactEmail) {
+        return withWriteItOut([
+            { text: 'Less than £5,000', value: '£4000' },
+            { text: '£5,000 – £10,000', value: '£7500' },
+            { text: '£10,000 – £20,000', value: '£15000' },
+            { text: 'More than £20,000', value: '£25000' },
+            { text: 'Not sure yet', value: '£0' }
+        ])
+    }
+
+    // Project start timing (after budget)
+    if (state.userBudget !== null && !state.projectStartTiming) {
+        return withWriteItOut([
+            { text: 'As soon as possible', value: 'As soon as possible' },
+            { text: 'Within the next 3 months', value: 'Within the next 3 months' },
+            { text: 'Just planning ahead', value: 'Just planning ahead' },
+            { text: 'Not sure yet', value: 'Not sure yet' }
+        ])
     }
 
     return []
@@ -231,10 +281,20 @@ export function getFallbackQuickReplies(field: string, state: ConversationState)
 
         case 'userBudget':
             return [
-                { text: '£5,000', value: '£5000' },
-                { text: '£10,000', value: '£10000' },
-                { text: '£20,000+', value: '£20000' },
-                { text: 'Not sure yet', value: '£0' }
+                { text: 'Less than £5,000', value: '£4000' },
+                { text: '£5,000 – £10,000', value: '£7500' },
+                { text: '£10,000 – £20,000', value: '£15000' },
+                { text: 'More than £20,000', value: '£25000' },
+                { text: 'Not sure yet', value: '£0' },
+                { text: "I'll write it out", value: WRITE_IT_OUT }
+            ]
+
+        case 'projectStartTiming':
+            return [
+                { text: 'As soon as possible', value: 'As soon as possible' },
+                { text: 'Within the next 3 months', value: 'Within the next 3 months' },
+                { text: 'Just planning ahead', value: 'Just planning ahead' },
+                { text: 'Not sure yet', value: 'Not sure yet' }
             ]
 
         default:

@@ -34,6 +34,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       <p>Service: ${leadData.service}</p>
       <p>Estimate: £${leadData.estimatedCost}</p>
       <p>Status: ${leadData.projectStatus}</p>
+      <p>Timeline: ${leadData.projectStartTiming || 'Not specified'}</p>
     `;
 
         const { data, error } = await resend.emails.send({

@@ -476,6 +476,17 @@ export function extractLocalInformation(userMessage: string): ExtractedInfo {
         }
     }
 
+    // PROJECT START TIMING
+    if (msg.includes('as soon as possible') || msg.includes('asap') || msg === 'immediately' || msg === 'urgently') {
+        extracted.projectStartTiming = 'As soon as possible'
+    } else if (msg.includes('3 months') || msg.includes('three months') || msg.includes('next few months') || msg.includes('within the next')) {
+        extracted.projectStartTiming = 'Within the next 3 months'
+    } else if (msg.includes('planning ahead') || msg.includes('just planning') || msg.includes('future') || msg.includes('later this year') || msg.includes('no rush')) {
+        extracted.projectStartTiming = 'Just planning ahead'
+    } else if (msg === 'not sure yet' || msg === 'not sure' || msg === 'unsure' || msg.includes("don't know") || msg.includes('no idea')) {
+        extracted.projectStartTiming = 'Not sure yet'
+    }
+
     return extracted
 }
 
