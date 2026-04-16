@@ -640,23 +640,23 @@ function App() {
                     <div className="px-6 py-5">
                       <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#2d2d2d' }}>Name</p>
+                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#afcb09' }}>Name</p>
                           <p className="text-sm font-semibold" style={{ color: '#2d2d2d' }}>Daniel</p>
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#2d2d2d' }}>Phone</p>
+                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#afcb09' }}>Phone</p>
                           <p className="text-sm font-semibold" style={{ color: '#2d2d2d' }}>{state.contactPhone || 'N/A'}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#2d2d2d' }}>Email</p>
+                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#afcb09' }}>Email</p>
                           <p className="text-sm font-semibold" style={{ color: '#2d2d2d' }}>{state.contactEmail || 'N/A'}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#2d2d2d' }}>Postcode</p>
+                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#afcb09' }}>Postcode</p>
                           <p className="text-sm font-semibold" style={{ color: '#2d2d2d' }}>LS29 0AY</p>
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#2d2d2d' }}>Job Type</p>
+                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#afcb09' }}>Job Type</p>
                           <p className="text-sm font-semibold" style={{ color: '#2d2d2d' }}>Patio</p>
                         </div>
                       </div>
@@ -669,13 +669,13 @@ function App() {
                     <div className="px-6 py-5">
                       <div className="grid grid-cols-2 gap-x-6">
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#2d2d2d' }}>Their budget</p>
+                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#afcb09' }}>Their budget</p>
                           <p className="text-sm font-semibold" style={{ color: '#2d2d2d' }}>
                             {state.userBudget ? formatCurrencyGBP(state.userBudget) : 'N/A'}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#2d2d2d' }}>Timeline</p>
+                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#afcb09' }}>Timeline</p>
                           <p className="text-sm font-semibold" style={{ color: '#2d2d2d' }}>
                             {state.projectStartTiming || 'N/A'}
                           </p>
