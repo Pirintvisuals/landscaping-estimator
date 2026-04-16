@@ -53,8 +53,8 @@ function App() {
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [emailSent, setEmailSent] = useState(false)
-  const [sendingEmail, setSendingEmail] = useState(false)
+  const [_emailSent, setEmailSent] = useState(false)
+  const [_sendingEmail, setSendingEmail] = useState(false)
 
   // Auto-scroll to bottom when new messages appear
   // Auto-scroll to bottom when new messages appear
@@ -133,7 +133,7 @@ function App() {
     }
   }, [])
 
-  const handleSubmitLead = async () => {
+  const _handleSubmitLead = async () => {
     if (!estimate) return
 
     setSendingEmail(true)
@@ -547,7 +547,6 @@ function App() {
             }
 
             if (message.role === 'estimate' && estimate) {
-              const isVIP = estimate.projectStatus === 'VIP PRIORITY'
 
               return (
                 <div key={message.id} className="my-4">
