@@ -655,6 +655,10 @@ function App() {
                           <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#394f20' }}>Postcode</p>
                           <p className="text-sm font-semibold" style={{ color: '#394f20' }}>HG5 0TG</p>
                         </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#394f20' }}>Job Type</p>
+                          <p className="text-sm font-semibold" style={{ color: '#394f20' }}>Landscaping</p>
+                        </div>
                       </div>
                     </div>
 
