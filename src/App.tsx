@@ -27,19 +27,20 @@ import { estimatorSchema, contactSchema } from './schemas/estimator'
 const DEMO_MODE = true
 
 const DEMO_ESTIMATE: EstimateResult = {
-  lowerBound: 5800,
-  estimate: 7200,
-  upperBound: 8900,
+  lowerBound: 12400,
+  estimate: 14200,
+  upperBound: 16800,
   lineItems: [
-    { label: 'Natural Stone Supply (40m²)', amount: 3200, note: '40m² × £80/m² premium sandstone', kind: 'material' },
-    { label: 'MOT Type 1 Sub-base', amount: 720, note: '40m² × £18/m² compacted base', kind: 'material' },
-    { label: 'Sharp Sand Bedding', amount: 280, note: '40m² × £7/m²', kind: 'material' },
-    { label: 'Edging & Pointing', amount: 480, note: 'perimeter edging + mortar pointing', kind: 'material' },
-    { label: 'Installation Labour', amount: 2016, note: '24hrs × £84/hr skilled team', kind: 'labor' },
-    { label: 'Project Management', amount: 360, note: '5% overhead', kind: 'fee' },
-    { label: 'Contingency Reserve', amount: 144, note: '2% contingency', kind: 'fee' },
+    { label: 'Porcelain Patio (60m²)', amount: 5400, note: '60m² × £90/m² large-format porcelain', kind: 'material' },
+    { label: 'Composite Decking (30m²)', amount: 3600, note: '30m² × £120/m² premium composite', kind: 'material' },
+    { label: 'MOT Sub-base & Groundworks', amount: 1800, note: 'full excavation + compacted base', kind: 'material' },
+    { label: 'Planting & Landscaping Beds', amount: 1600, note: 'shrubs, bark mulch, border edging', kind: 'material' },
+    { label: 'Turf Removal & Site Clearance', amount: 620, note: 'old slabs + turf strip, skip hire', kind: 'fee' },
+    { label: 'Installation Labour', amount: 1920, note: '3-man team, 8 days × £80/hr', kind: 'labor' },
+    { label: 'Project Management', amount: 852, note: '6% overhead', kind: 'fee' },
+    { label: 'Contingency Reserve', amount: 408, note: '3% contingency allowance', kind: 'fee' },
   ],
-  reasoning: `40m² natural sandstone patio. Flat site with good rear access confirmed.\n\nFull MOT sub-base and mortar pointing included. No demolition required.`,
+  reasoning: `Full garden transformation — 60m² porcelain patio, 30m² composite decking, planting beds.\n\nLarge double gate confirmed for material access. Turf and old slabs included in removal.\n\nProject Management and Contingency included for quality assurance.`,
   projectStatus: 'VIP PRIORITY' as const
 }
 // ─────────────────────────────────────────────────────────────────────────────
@@ -95,58 +96,60 @@ function App() {
     if (DEMO_MODE) {
       const ts = new Date()
       const demoMessages: ChatMessage[] = [
-        { id: 'dm-1', role: 'agent', content: "Hi! What kind of outdoor work are you looking to get done? Patio / Driveway / Decking / Garden design / Lawn / Fencing — or something else?", timestamp: ts },
-        { id: 'dm-2', role: 'user', content: "Looking to get a natural stone patio laid", timestamp: ts },
-        { id: 'dm-3', role: 'agent', content: "Great choice — natural stone looks stunning. How big is the area roughly? Dimensions or m² both work.", timestamp: ts },
-        { id: 'dm-4', role: 'user', content: "About 8 by 5 metres, so around 40 square metres", timestamp: ts },
-        { id: 'dm-5', role: 'agent', content: "40m² noted. Any preference on stone — sandstone, limestone, porcelain, or happy to go with what's recommended?", timestamp: ts },
-        { id: 'dm-6', role: 'user', content: "Sandstone please, premium finish", timestamp: ts },
-        { id: 'dm-7', role: 'agent', content: "Is there easy access to the rear — side gate, or do materials need to go through the house?", timestamp: ts },
-        { id: 'dm-8', role: 'user', content: "Side gate, good access no problems", timestamp: ts },
-        { id: 'dm-9', role: 'agent', content: "Is the ground reasonably flat or is there a slope to deal with?", timestamp: ts },
-        { id: 'dm-10', role: 'user', content: "Flat, just lawn there at the moment", timestamp: ts },
-        { id: 'dm-11', role: 'agent', content: "Anything to remove first — existing paving, turf, or a shed?", timestamp: ts },
-        { id: 'dm-12', role: 'user', content: "Just turf, nothing else", timestamp: ts },
-        { id: 'dm-13', role: 'agent', content: "What's your postcode?", timestamp: ts },
-        { id: 'dm-14', role: 'user', content: "BD5 8LX", timestamp: ts },
-        { id: 'dm-15', role: 'agent', content: "What's your rough budget for this — or are you getting a feel for the numbers?", timestamp: ts },
-        { id: 'dm-16', role: 'user', content: "Around £6,500 to £7,000", timestamp: ts },
-        { id: 'dm-17', role: 'agent', content: "Perfect. What's your name?", timestamp: ts },
-        { id: 'dm-18', role: 'user', content: "Daniel Myers", timestamp: ts },
-        { id: 'dm-19', role: 'agent', content: "Best number to reach you on, Daniel?", timestamp: ts },
-        { id: 'dm-20', role: 'user', content: "07512 334 891", timestamp: ts },
-        { id: 'dm-21', role: 'agent', content: "And your email?", timestamp: ts },
-        { id: 'dm-22', role: 'user', content: "d.myers@hotmail.co.uk", timestamp: ts },
-        { id: 'dm-23', role: 'agent', content: "When are you looking to get started?", timestamp: ts },
-        { id: 'dm-24', role: 'user', content: "Next 2 to 3 months ideally", timestamp: ts },
-        { id: 'dm-25', role: 'agent', content: "Thanks Daniel, pulling your estimate together now...", timestamp: ts },
-        { id: 'dm-26', role: 'estimate', content: '', timestamp: ts }
+        { id: 'dm-1', role: 'agent', content: "Hi! Are you looking for a quote, or do you have a question for us?", timestamp: ts },
+        { id: 'dm-2', role: 'user', content: "I'd like a quote please", timestamp: ts },
+        { id: 'dm-3', role: 'agent', content: "Great. What kind of work are you looking to get done?", timestamp: ts },
+        { id: 'dm-4', role: 'user', content: "Full garden makeover — patio, decking, the lot", timestamp: ts },
+        { id: 'dm-5', role: 'agent', content: "Brilliant, sounds like a big one. How large is the garden roughly — dimensions or square metres?", timestamp: ts },
+        { id: 'dm-6', role: 'user', content: "It's about 15 by 12 metres, so around 180 square metres total", timestamp: ts },
+        { id: 'dm-7', role: 'agent', content: "180m² noted. What materials are you thinking — porcelain, natural stone, composite decking?", timestamp: ts },
+        { id: 'dm-8', role: 'user', content: "Large format porcelain for the patio and composite decking at the back", timestamp: ts },
+        { id: 'dm-9', role: 'agent', content: "Good choices. Is there easy access for machinery and materials — double gate or side passage?", timestamp: ts },
+        { id: 'dm-10', role: 'user', content: "Yes, double gate on the side, no issues getting equipment in", timestamp: ts },
+        { id: 'dm-11', role: 'agent', content: "Is the ground level, or is there a slope?", timestamp: ts },
+        { id: 'dm-12', role: 'user', content: "Mostly flat, slight drop toward the back", timestamp: ts },
+        { id: 'dm-13', role: 'agent', content: "Anything currently on site that needs removing — old slabs, turf, a shed?", timestamp: ts },
+        { id: 'dm-14', role: 'user', content: "Old paving slabs and turf across most of it", timestamp: ts },
+        { id: 'dm-15', role: 'agent', content: "Understood. What's your postcode?", timestamp: ts },
+        { id: 'dm-16', role: 'user', content: "LS17 8QR", timestamp: ts },
+        { id: 'dm-17', role: 'agent', content: "What sort of budget are you working with?", timestamp: ts },
+        { id: 'dm-18', role: 'user', content: "We're thinking around £13,000 to £15,000", timestamp: ts },
+        { id: 'dm-19', role: 'agent', content: "And your name?", timestamp: ts },
+        { id: 'dm-20', role: 'user', content: "Daniel Myers", timestamp: ts },
+        { id: 'dm-21', role: 'agent', content: "Best number to reach you on, Daniel?", timestamp: ts },
+        { id: 'dm-22', role: 'user', content: "07512 334 891", timestamp: ts },
+        { id: 'dm-23', role: 'agent', content: "And your email?", timestamp: ts },
+        { id: 'dm-24', role: 'user', content: "d.myers@hotmail.co.uk", timestamp: ts },
+        { id: 'dm-25', role: 'agent', content: "When are you looking to get started?", timestamp: ts },
+        { id: 'dm-26', role: 'user', content: "We'd like it done within 6 weeks if possible", timestamp: ts },
+        { id: 'dm-27', role: 'agent', content: "Thanks Daniel — pulling your estimate together now.", timestamp: ts },
+        { id: 'dm-28', role: 'estimate', content: '', timestamp: ts }
       ]
       setState(prev => ({
         ...prev,
         messageHistory: demoMessages,
         service: 'hardscaping',
-        area_m2: 40,
-        length_m: 8,
-        width_m: 5,
+        area_m2: 90,
+        length_m: 15,
+        width_m: 12,
         materialTier: 'premium',
         hasExcavatorAccess: true,
         hasDrivewayForSkip: true,
         slopeLevel: 'flat',
-        existingDemolition: false,
+        existingDemolition: true,
         fullName: 'Daniel Myers',
         contactPhone: '07512 334 891',
         contactEmail: 'd.myers@hotmail.co.uk',
-        postalCode: 'BD5 8LX',
-        userBudget: 6800,
-        projectStartTiming: 'Next 2-3 months'
+        postalCode: 'LS17 8QR',
+        userBudget: 13500,
+        projectStartTiming: 'Within 6 weeks'
       }))
       setEstimate(DEMO_ESTIMATE)
     } else {
       const greeting: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'agent',
-        content: "Hi! What kind of outdoor work are you looking to get done? Patio / Driveway / Decking / Garden design / Lawn / Fencing — or something else?",
+        content: "Hi! Are you looking for a quote, or do you have a question for us?",
         timestamp: new Date()
       }
       setState(prev => ({
@@ -498,7 +501,9 @@ function App() {
               flexShrink: 0
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🏡</div>
+                <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width: '22px', height: '22px' }}><path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="#15803d"/></svg>
+                </div>
                 <div>
                   <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '14px', letterSpacing: '-0.2px' }}>Landscaping Estimator</div>
                   <div style={{ color: '#bbf7d0', fontSize: '11px' }}>Patios · Driveways · Decking · Garden Design</div>
@@ -624,7 +629,7 @@ function App() {
                                 boxShadow: '0 4px 12px rgba(21,128,61,0.35)'
                               }}
                             >
-                              Send to John
+                              Send Enquiry
                             </button>
                           </div>
                         </div>
@@ -693,7 +698,7 @@ function App() {
                                 ['Phone', state.contactPhone || 'N/A'],
                                 ['Email', state.contactEmail || 'N/A'],
                                 ['Postcode', state.postalCode || 'N/A'],
-                                ['Job Type', 'Natural Stone Patio'],
+                                ['Job Type', 'Full Garden Makeover'],
                                 ['Their Budget', state.userBudget ? formatCurrencyGBP(state.userBudget) : 'N/A'],
                               ].map(([label, val]) => (
                                 <div key={label}>
@@ -710,10 +715,26 @@ function App() {
                             <p style={{ fontSize: '12px', fontWeight: 600, color: '#111827', margin: 0 }}>{state.projectStartTiming || 'N/A'}</p>
                           </div>
 
-                          {/* Sent confirmation */}
-                          <div style={{ padding: '12px 20px 16px', backgroundColor: '#f0fdf4', borderTop: '1px solid #86efac', textAlign: 'center' }}>
-                            <p style={{ fontSize: '12px', fontWeight: 700, color: '#15803d', margin: 0 }}>✅ Sent to John</p>
-                          </div>
+                          {/* Lead score + category */}
+                          {(() => {
+                            const scoreColor = getScoreColor(leadScore)
+                            const scoreLabel = getScoreLabel(leadScore)
+                            return (
+                              <div style={{ padding: '14px 20px', backgroundColor: '#f0fdf4', borderTop: '1px solid #86efac' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                  <span style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>Lead Quality</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '18px', fontWeight: 900, color: scoreColor }}>{leadScore}/100</span>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff', backgroundColor: scoreColor, padding: '2px 10px', borderRadius: '20px' }}>{scoreLabel}</span>
+                                  </div>
+                                </div>
+                                <div style={{ height: '7px', borderRadius: '4px', backgroundColor: '#dcfce7', overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${leadScore}%`, backgroundColor: scoreColor, borderRadius: '4px', transition: 'width 0.7s ease' }} />
+                                </div>
+                                <p style={{ fontSize: '11px', color: '#15803d', fontWeight: 700, textAlign: 'center', margin: '10px 0 0' }}>Enquiry sent</p>
+                              </div>
+                            )
+                          })()}
 
                         </div>
                       )}
@@ -780,7 +801,7 @@ function App() {
                       cursor: 'pointer'
                     }}
                   >
-                    {reply.text}
+                    {reply.text.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|\p{Emoji_Presentation}/gu, '').trim()}
                   </button>
                 ))}
               </div>
@@ -860,6 +881,37 @@ function App() {
           </div>
         )}
 
+        {/* Floating tooltip — only when closed */}
+        {!isOpen && (
+          <div style={{
+            backgroundColor: '#ffffff',
+            color: '#14532d',
+            fontSize: '13px',
+            fontWeight: 600,
+            padding: '8px 14px',
+            borderRadius: '20px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+            border: '1px solid #bbf7d0',
+            whiteSpace: 'nowrap',
+            marginBottom: '4px',
+            position: 'relative'
+          }}>
+            Want an instant quote?
+            <div style={{
+              position: 'absolute',
+              bottom: '-6px',
+              right: '24px',
+              width: '12px',
+              height: '12px',
+              backgroundColor: '#ffffff',
+              border: '1px solid #bbf7d0',
+              borderTop: 'none',
+              borderLeft: 'none',
+              transform: 'rotate(45deg)'
+            }} />
+          </div>
+        )}
+
         {/* Toggle bubble */}
         <button
           onClick={() => setIsOpen(o => !o)}
@@ -880,8 +932,8 @@ function App() {
           }}
         >
           {isOpen
-            ? <span style={{ color: '#ffffff', fontSize: '22px', fontWeight: 700 }}>✕</span>
-            : <span style={{ fontSize: '28px' }}>🏡</span>
+            ? <span style={{ color: '#ffffff', fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>✕</span>
+            : <svg viewBox="0 0 24 24" fill="none" style={{ width: '30px', height: '30px' }}><path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="#ffffff"/></svg>
           }
         </button>
 
