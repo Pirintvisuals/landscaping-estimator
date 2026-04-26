@@ -470,28 +470,35 @@ function App() {
       {/* Keyframe styles */}
       <style>{`
         @keyframes typingDot {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-          30% { transform: translateY(-4px); opacity: 1; }
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+          30% { transform: translateY(-5px); opacity: 1; }
         }
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(12px); }
-          to   { opacity: 1; transform: translateY(0); }
+        @keyframes chatOpen {
+          from { opacity: 0; transform: translateY(32px) scale(0.95); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes tooltipPop {
-          from { opacity: 0; transform: scale(0.92) translateY(6px); }
+          from { opacity: 0; transform: scale(0.88) translateY(8px); }
           to   { opacity: 1; transform: scale(1) translateY(0); }
         }
-        .chat-panel { animation: fadeSlideUp 0.28s cubic-bezier(0.16,1,0.3,1) both; }
-        .tooltip-pop { animation: tooltipPop 0.22s cubic-bezier(0.16,1,0.3,1) both; }
-        .crm-card { animation: fadeSlideUp 0.32s cubic-bezier(0.16,1,0.3,1) both; }
+        @keyframes crmSlide {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .chat-panel { animation: chatOpen 0.42s cubic-bezier(0.16,1,0.3,1) both; }
+        .tooltip-pop { animation: tooltipPop 0.26s cubic-bezier(0.16,1,0.3,1) both; }
+        .crm-card { animation: crmSlide 0.34s cubic-bezier(0.16,1,0.3,1) both; }
         .qr-btn:hover { background: #dcfce7 !important; }
         .send-btn:hover:not(:disabled) { background: #166534 !important; }
         .enquiry-btn:hover { background: #166534 !important; }
         .close-btn:hover { opacity: 0.7; }
-        .bubble-btn:hover { transform: scale(1.06); }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #86efac; border-radius: 4px; }
+        .bubble-btn:hover { transform: scale(1.07) !important; }
+        /* Scrollbar — thin, blends into card */
+        .msgs-scroll { scrollbar-width: thin; scrollbar-color: rgba(21,128,61,0.2) transparent; }
+        .msgs-scroll::-webkit-scrollbar { width: 3px; }
+        .msgs-scroll::-webkit-scrollbar-track { background: transparent; margin: 12px 0; }
+        .msgs-scroll::-webkit-scrollbar-thumb { background: rgba(21,128,61,0.22); border-radius: 10px; }
+        .msgs-scroll::-webkit-scrollbar-thumb:hover { background: rgba(21,128,61,0.45); }
       `}</style>
 
       {/* Corner Widget */}
@@ -505,7 +512,7 @@ function App() {
         {isOpen && (
           <div className="chat-panel" style={{
             width: '440px',
-            height: '700px',
+            height: 'clamp(480px, calc(100vh - 120px), 680px)',
             display: 'flex',
             flexDirection: 'column',
             backgroundColor: '#ffffff',
@@ -563,8 +570,8 @@ function App() {
             </header>
 
             {/* Messages Area */}
-            <div style={{
-              flex: 1, overflowY: 'auto', padding: '18px 16px',
+            <div className="msgs-scroll" style={{
+              flex: 1, overflowY: 'auto', padding: '18px 14px 18px 16px',
               display: 'flex', flexDirection: 'column', gap: '8px',
               backgroundColor: '#f8faf9'
             }}>
@@ -882,38 +889,52 @@ function App() {
             </div>
 
             {/* Quick Replies */}
-            {activeReplies.length > 0 && (
-              <div style={{
-                padding: '8px 14px 10px',
-                backgroundColor: '#ffffff',
-                borderTop: '1px solid #f0fdf4',
-                display: 'flex', flexWrap: 'wrap', gap: '6px',
-                flexShrink: 0
-              }}>
-                {activeReplies.map((reply, index) => (
-                  <button
-                    key={index}
-                    className="qr-btn"
-                    onClick={() => handleQuickReply(reply.value)}
-                    disabled={isProcessing}
-                    style={{
-                      padding: '6px 14px',
-                      backgroundColor: '#f0fdf4',
-                      color: '#15803d',
-                      border: 'none',
-                      borderRadius: '20px',
-                      fontSize: '12.5px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'background 0.12s',
-                      opacity: isProcessing ? 0.5 : 1
-                    }}
-                  >
-                    {reply.text.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|\p{Emoji_Presentation}/gu, '').trim()}
-                  </button>
-                ))}
-              </div>
-            )}
+            {(() => {
+              const demoChips = DEMO_MODE
+                ? [
+                    { text: 'Porcelain Patio', value: 'Porcelain Patio' },
+                    { text: 'Resin Driveway', value: 'Resin Driveway' },
+                    { text: 'Composite Decking', value: 'Composite Decking' },
+                    { text: 'Full Garden Makeover', value: 'Full Garden Makeover' },
+                  ]
+                : []
+              const displayed = activeReplies.length > 0
+                ? activeReplies
+                : demoChips
+              if (displayed.length === 0) return null
+              return (
+                <div style={{
+                  padding: '8px 14px 10px',
+                  backgroundColor: '#ffffff',
+                  borderTop: '1px solid #f0fdf4',
+                  display: 'flex', flexWrap: 'wrap', gap: '6px',
+                  flexShrink: 0
+                }}>
+                  {displayed.map((reply, index) => (
+                    <button
+                      key={index}
+                      className="qr-btn"
+                      onClick={() => !DEMO_MODE && handleQuickReply(reply.value)}
+                      disabled={isProcessing}
+                      style={{
+                        padding: '6px 14px',
+                        backgroundColor: '#f0fdf4',
+                        color: '#15803d',
+                        border: 'none',
+                        borderRadius: '20px',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        cursor: DEMO_MODE ? 'default' : 'pointer',
+                        transition: 'background 0.12s',
+                        opacity: isProcessing ? 0.5 : 1
+                      }}
+                    >
+                      {reply.text.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|\p{Emoji_Presentation}/gu, '').trim()}
+                    </button>
+                  ))}
+                </div>
+              )
+            })()}
 
             {/* Input Area */}
             <div style={{
