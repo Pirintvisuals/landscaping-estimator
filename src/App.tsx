@@ -459,81 +459,140 @@ function App() {
 
   const activeReplies = state.showQuickReplies ? quickReplies : getQuickReplies(state)
   const leadScore = calcLeadScore(state, estimate)
+  const scoreColor = getScoreColor(leadScore)
+  const scoreLabel = getScoreLabel(leadScore)
 
   return (
     <>
-      {/* Dark backdrop so widget is visible against any background */}
-      <div style={{ position: 'fixed', inset: 0, backgroundColor: '#0f1e0f', zIndex: 0 }} />
+      {/* Page backdrop */}
+      <div style={{ position: 'fixed', inset: 0, background: 'linear-gradient(135deg, #0a1a0f 0%, #0f2318 50%, #0d1c12 100%)', zIndex: 0 }} />
+
+      {/* Keyframe styles */}
+      <style>{`
+        @keyframes typingDot {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-4px); opacity: 1; }
+        }
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes tooltipPop {
+          from { opacity: 0; transform: scale(0.92) translateY(6px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .chat-panel { animation: fadeSlideUp 0.28s cubic-bezier(0.16,1,0.3,1) both; }
+        .tooltip-pop { animation: tooltipPop 0.22s cubic-bezier(0.16,1,0.3,1) both; }
+        .crm-card { animation: fadeSlideUp 0.32s cubic-bezier(0.16,1,0.3,1) both; }
+        .qr-btn:hover { background: #dcfce7 !important; }
+        .send-btn:hover:not(:disabled) { background: #166534 !important; }
+        .enquiry-btn:hover { background: #166534 !important; }
+        .close-btn:hover { opacity: 0.7; }
+        .bubble-btn:hover { transform: scale(1.06); }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #86efac; border-radius: 4px; }
+      `}</style>
 
       {/* Corner Widget */}
       <div style={{
-        position: 'fixed',
-        bottom: '24px',
-        right: '24px',
-        zIndex: 9999,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-end',
-        gap: '12px'
+        position: 'fixed', bottom: '28px', right: '28px',
+        zIndex: 9999, display: 'flex', flexDirection: 'column',
+        alignItems: 'flex-end', gap: '12px'
       }}>
 
-        {/* Chat Panel */}
+        {/* ── Chat Panel ─────────────────────────────────────────────────────── */}
         {isOpen && (
-          <div style={{
-            width: '420px',
+          <div className="chat-panel" style={{
+            width: '440px',
             height: '700px',
             display: 'flex',
             flexDirection: 'column',
-            backgroundColor: '#f0fdf4',
-            borderRadius: '18px',
+            backgroundColor: '#ffffff',
+            borderRadius: '22px',
             overflow: 'hidden',
-            boxShadow: '0 24px 80px rgba(0,0,0,0.45), 0 4px 20px rgba(21,128,61,0.2)',
-            border: '1px solid #16a34a'
+            boxShadow: '0 32px 96px rgba(0,0,0,0.38), 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(21,128,61,0.12)',
           }}>
 
             {/* Header */}
             <header style={{
-              backgroundColor: '#15803d',
-              padding: '12px 16px',
+              background: 'linear-gradient(135deg, #14532d 0%, #166534 60%, #15803d 100%)',
+              padding: '14px 18px 13px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              flexShrink: 0
+              flexShrink: 0,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg viewBox="0 0 24 24" fill="none" style={{ width: '22px', height: '22px' }}><path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="#15803d"/></svg>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {/* Avatar / icon */}
+                <div style={{
+                  width: '40px', height: '40px', borderRadius: '10px',
+                  background: 'rgba(255,255,255,0.15)',
+                  backdropFilter: 'blur(8px)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <svg viewBox="0 0 24 24" fill="none" style={{ width: '22px', height: '22px' }}>
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 2.61 1.33 4.89 3.35 6.23L7 22l5-2 5 2-1.35-6.77A7 7 0 0 0 19 9c0-3.87-3.13-7-7-7Z" fill="rgba(255,255,255,0.9)"/>
+                  </svg>
                 </div>
                 <div>
-                  <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '14px', letterSpacing: '-0.2px' }}>Landscaping Estimator</div>
-                  <div style={{ color: '#bbf7d0', fontSize: '11px' }}>Patios · Driveways · Decking · Garden Design</div>
+                  <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '14px', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
+                    Landscaping Estimator
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#4ade80', boxShadow: '0 0 0 2px rgba(74,222,128,0.3)' }} />
+                    <span style={{ color: '#bbf7d0', fontSize: '11px', fontWeight: 500 }}>Online · Usually replies in seconds</span>
+                  </div>
                 </div>
               </div>
               <button
+                className="close-btn"
                 onClick={() => setIsOpen(false)}
-                style={{ color: '#bbf7d0', background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', lineHeight: 1, padding: '4px' }}
+                style={{
+                  color: 'rgba(255,255,255,0.8)', background: 'rgba(255,255,255,0.12)',
+                  border: 'none', cursor: 'pointer', borderRadius: '8px',
+                  width: '32px', height: '32px', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', transition: 'opacity 0.15s', flexShrink: 0
+                }}
               >
-                ✕
+                <svg viewBox="0 0 14 14" fill="none" style={{ width: '12px', height: '12px' }}>
+                  <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
               </button>
             </header>
 
             {/* Messages Area */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {state.messageHistory.map((message) => {
+            <div style={{
+              flex: 1, overflowY: 'auto', padding: '18px 16px',
+              display: 'flex', flexDirection: 'column', gap: '8px',
+              backgroundColor: '#f8faf9'
+            }}>
+              {state.messageHistory.map((message, idx) => {
 
                 if (message.role === 'agent') {
                   return (
-                    <div key={message.id} style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                    <div key={message.id} style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', gap: '8px' }}>
+                      {/* Mini avatar dot for first or after user message */}
+                      <div style={{
+                        width: '26px', height: '26px', borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #15803d, #166534)',
+                        flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        visibility: (idx === 0 || state.messageHistory[idx - 1]?.role === 'user') ? 'visible' : 'hidden'
+                      }}>
+                        <svg viewBox="0 0 14 14" fill="none" style={{ width: '12px', height: '12px' }}>
+                          <path d="M7 1C4.24 1 2 3.24 2 6c0 1.73.89 3.25 2.23 4.15L3.5 13 7 11.5l3.5 1.5-.73-2.85A5 5 0 0 0 12 6c0-2.76-2.24-5-5-5Z" fill="white"/>
+                        </svg>
+                      </div>
                       <div style={{
                         backgroundColor: '#ffffff',
-                        color: '#14532d',
-                        border: '1px solid #bbf7d0',
-                        borderRadius: '16px 16px 16px 4px',
-                        padding: '10px 14px',
-                        maxWidth: '82%',
-                        fontSize: '13px',
-                        lineHeight: 1.5,
-                        boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
+                        color: '#1a2e1a',
+                        borderRadius: '18px 18px 18px 5px',
+                        padding: '11px 15px',
+                        maxWidth: '78%',
+                        fontSize: '13.5px',
+                        lineHeight: 1.55,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.04)'
                       }}>
                         <p
                           style={{ margin: 0 }}
@@ -553,13 +612,14 @@ function App() {
                   return (
                     <div key={message.id} style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <div style={{
-                        backgroundColor: '#16a34a',
+                        background: 'linear-gradient(135deg, #16a34a, #15803d)',
                         color: '#ffffff',
-                        borderRadius: '16px 16px 4px 16px',
-                        padding: '10px 14px',
-                        maxWidth: '82%',
-                        fontSize: '13px',
-                        lineHeight: 1.5
+                        borderRadius: '18px 18px 5px 18px',
+                        padding: '11px 15px',
+                        maxWidth: '78%',
+                        fontSize: '13.5px',
+                        lineHeight: 1.55,
+                        boxShadow: '0 2px 8px rgba(21,128,61,0.25)'
                       }}>
                         <p style={{ margin: 0 }}>{message.content}</p>
                       </div>
@@ -569,64 +629,89 @@ function App() {
 
                 if (message.role === 'estimate' && estimate) {
                   return (
-                    <div key={message.id} style={{ margin: '4px 0' }}>
+                    <div key={message.id} style={{ margin: '6px 0' }}>
 
-                      {/* ── SIMPLE QUOTE VIEW (default) ── */}
+                      {/* ── SIMPLE QUOTE VIEW ── */}
                       {!showFullCard && (
                         <div style={{
                           backgroundColor: '#ffffff',
-                          borderRadius: '16px',
+                          borderRadius: '18px',
                           overflow: 'hidden',
-                          border: '1px solid #86efac',
-                          boxShadow: '0 8px 30px rgba(21,128,61,0.15)'
+                          boxShadow: '0 4px 24px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06)'
                         }}>
-                          {/* Header */}
-                          <div style={{ backgroundColor: '#14532d', padding: '10px 16px' }}>
-                            <p style={{ color: '#ffffff', fontWeight: 800, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>
-                              Your Rough Quote
-                            </p>
+                          {/* Card header strip */}
+                          <div style={{
+                            background: 'linear-gradient(135deg, #14532d, #166534)',
+                            padding: '12px 18px',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                          }}>
+                            <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                              Your Estimate
+                            </span>
+                            <span style={{
+                              backgroundColor: 'rgba(255,255,255,0.18)', color: '#ffffff',
+                              fontSize: '10px', fontWeight: 600, padding: '2px 10px', borderRadius: '20px',
+                              letterSpacing: '0.06em', textTransform: 'uppercase'
+                            }}>
+                              {estimate.projectStatus}
+                            </span>
                           </div>
 
-                          {/* Big price */}
-                          <div style={{ padding: '18px 20px 12px', textAlign: 'center' }}>
-                            <p style={{ fontSize: '3rem', fontWeight: 900, color: '#15803d', letterSpacing: '-2px', lineHeight: 1, margin: 0 }}>
+                          {/* Price */}
+                          <div style={{ padding: '20px 20px 8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '42px', fontWeight: 900, color: '#14532d', letterSpacing: '-2.5px', lineHeight: 1 }}>
                               {formatCurrencyGBP(estimate.estimate)}
-                            </p>
-                            <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>
-                              Range: {formatCurrencyGBP(estimate.lowerBound)} – {formatCurrencyGBP(estimate.upperBound)}
-                            </p>
+                            </div>
+                            <div style={{ fontSize: '11.5px', color: '#9ca3af', margin: '5px 0 0', letterSpacing: '0.01em' }}>
+                              {formatCurrencyGBP(estimate.lowerBound)} – {formatCurrencyGBP(estimate.upperBound)} estimated range
+                            </div>
+                          </div>
+
+                          {/* Range bar */}
+                          <div style={{ padding: '6px 20px 4px' }}>
+                            <div style={{ height: '5px', borderRadius: '3px', backgroundColor: '#f0fdf4', overflow: 'hidden', position: 'relative' }}>
+                              <div style={{ position: 'absolute', top: 0, bottom: 0, left: '20%', right: '20%', background: 'linear-gradient(90deg, #86efac, #16a34a, #86efac)', borderRadius: '3px' }} />
+                            </div>
                           </div>
 
                           {/* Breakdown */}
-                          <div style={{ padding: '4px 20px 14px', borderTop: '1px solid #f0fdf4' }}>
-                            <p style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 8px' }}>How it's calculated</p>
+                          <div style={{ padding: '14px 20px 6px' }}>
+                            <div style={{ fontSize: '10px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, marginBottom: '10px' }}>
+                              Cost breakdown
+                            </div>
                             {estimate.lineItems.map((item, i) => (
-                              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
-                                <div>
-                                  <span style={{ fontSize: '12px', color: '#111827', fontWeight: 500 }}>{item.label}</span>
-                                  {item.note && <span style={{ fontSize: '10px', color: '#9ca3af', marginLeft: '5px' }}>({item.note})</span>}
+                              <div key={i} style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                                paddingBottom: '8px',
+                                borderBottom: i < estimate.lineItems.length - 1 ? '1px solid #f3f4f6' : 'none',
+                                marginBottom: i < estimate.lineItems.length - 1 ? '8px' : 0
+                              }}>
+                                <div style={{ flex: 1, marginRight: '12px' }}>
+                                  <div style={{ fontSize: '12.5px', color: '#111827', fontWeight: 500 }}>{item.label}</div>
+                                  {item.note && (
+                                    <div style={{ fontSize: '10.5px', color: '#9ca3af', marginTop: '1px' }}>{item.note}</div>
+                                  )}
                                 </div>
-                                <span style={{ fontSize: '12px', fontWeight: 700, color: '#15803d', flexShrink: 0, marginLeft: '8px' }}>{formatCurrencyGBP(item.amount)}</span>
+                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#15803d', flexShrink: 0 }}>
+                                  {formatCurrencyGBP(item.amount)}
+                                </div>
                               </div>
                             ))}
                           </div>
 
-                          {/* Send to John button */}
-                          <div style={{ padding: '12px 20px 16px', backgroundColor: '#f0fdf4', borderTop: '1px solid #86efac' }}>
+                          {/* CTA */}
+                          <div style={{ padding: '14px 20px 18px' }}>
                             <button
+                              className="enquiry-btn"
                               onClick={() => setShowFullCard(true)}
                               style={{
-                                width: '100%',
-                                padding: '13px',
-                                backgroundColor: '#15803d',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: '10px',
-                                fontWeight: 800,
-                                fontSize: '13px',
-                                cursor: 'pointer',
-                                letterSpacing: '0.04em',
-                                boxShadow: '0 4px 12px rgba(21,128,61,0.35)'
+                                width: '100%', padding: '14px',
+                                background: 'linear-gradient(135deg, #15803d, #166534)',
+                                color: '#ffffff', border: 'none', borderRadius: '12px',
+                                fontWeight: 700, fontSize: '13.5px', cursor: 'pointer',
+                                letterSpacing: '0.02em',
+                                boxShadow: '0 4px 16px rgba(21,128,61,0.4)',
+                                transition: 'background 0.15s'
                               }}
                             >
                               Send Enquiry
@@ -635,107 +720,124 @@ function App() {
                         </div>
                       )}
 
-                      {/* ── FULL CRM CARD (after clicking Send to John) ── */}
+                      {/* ── FULL CRM CARD ── */}
                       {showFullCard && (
-                        <div style={{
+                        <div className="crm-card" style={{
                           backgroundColor: '#ffffff',
-                          borderRadius: '16px',
+                          borderRadius: '18px',
                           overflow: 'hidden',
-                          border: '1px solid #86efac',
-                          boxShadow: '0 8px 30px rgba(21,128,61,0.15)',
-                          animation: 'slideDown 0.3s ease'
+                          boxShadow: '0 4px 24px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06)'
                         }}>
-                          {/* New Enquiry bar */}
+                          {/* Top bar */}
                           <div style={{
-                            backgroundColor: '#14532d',
-                            padding: '8px 16px',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
+                            background: 'linear-gradient(135deg, #14532d, #166534)',
+                            padding: '10px 18px',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                           }}>
-                            <span style={{ color: '#ffffff', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                              New Enquiry
-                            </span>
-                            <span style={{ color: '#86efac', fontSize: '10px' }}>
-                              Today at {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                              <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#4ade80', boxShadow: '0 0 0 2px rgba(74,222,128,0.35)' }} />
+                              <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                New Enquiry
+                              </span>
+                            </div>
+                            <span style={{ color: '#bbf7d0', fontSize: '10.5px', fontWeight: 500 }}>
+                              {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true })}
                             </span>
                           </div>
 
-                          {/* No logo — clean header only */}
-
-                          {/* Estimate amount */}
-                          <div style={{ padding: '18px 20px 10px', textAlign: 'center', backgroundColor: '#ffffff' }}>
-                            <p style={{ fontSize: '10px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.18em', margin: '0 0 4px' }}>Estimated Cost</p>
-                            <p style={{ fontSize: '3.2rem', fontWeight: 900, color: '#15803d', letterSpacing: '-2px', lineHeight: 1, margin: 0 }}>
+                          {/* Price section */}
+                          <div style={{ padding: '20px 20px 14px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                            <div style={{ fontSize: '10.5px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.16em', fontWeight: 600, marginBottom: '4px' }}>
+                              Estimated Cost
+                            </div>
+                            <div style={{ fontSize: '44px', fontWeight: 900, color: '#14532d', letterSpacing: '-2.5px', lineHeight: 1 }}>
                               {formatCurrencyGBP(estimate.estimate)}
-                            </p>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '8px' }}>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '10px' }}>
                               <span style={{ fontSize: '11px', color: '#9ca3af' }}>{formatCurrencyGBP(estimate.lowerBound)}</span>
-                              <div style={{ flex: 1, maxWidth: '70px', height: '4px', borderRadius: '2px', backgroundColor: '#dcfce7', position: 'relative' }}>
-                                <div style={{ position: 'absolute', top: 0, bottom: 0, left: '25%', right: '25%', backgroundColor: '#16a34a', borderRadius: '2px' }} />
+                              <div style={{ width: '80px', height: '5px', borderRadius: '3px', backgroundColor: '#f0fdf4', overflow: 'hidden', position: 'relative' }}>
+                                <div style={{ position: 'absolute', top: 0, bottom: 0, left: '22%', right: '22%', background: 'linear-gradient(90deg, #86efac, #16a34a)', borderRadius: '3px' }} />
                               </div>
                               <span style={{ fontSize: '11px', color: '#9ca3af' }}>{formatCurrencyGBP(estimate.upperBound)}</span>
                             </div>
-                            <p style={{ fontSize: '10px', color: '#9ca3af', margin: '4px 0 0' }}>indicative range</p>
                           </div>
 
-                          {/* Lead Score */}
-                          <div style={{ padding: '10px 20px', backgroundColor: '#f0fdf4', borderTop: '1px solid #dcfce7', borderBottom: '1px solid #dcfce7' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                              <span style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Lead Quality Score</span>
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: getScoreColor(leadScore) }}>{leadScore}/100 — {getScoreLabel(leadScore)}</span>
+                          {/* Lead score section */}
+                          <div style={{ padding: '14px 18px', backgroundColor: '#f8fdf9', borderBottom: '1px solid #f0fdf4' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 600 }}>
+                                Lead Score
+                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                                <span style={{ fontSize: '20px', fontWeight: 900, color: scoreColor, letterSpacing: '-0.5px' }}>
+                                  {leadScore}
+                                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#9ca3af' }}>/100</span>
+                                </span>
+                                <span style={{
+                                  fontSize: '10.5px', fontWeight: 700, color: '#ffffff',
+                                  backgroundColor: scoreColor, padding: '3px 10px',
+                                  borderRadius: '20px', letterSpacing: '0.04em'
+                                }}>
+                                  {scoreLabel}
+                                </span>
+                              </div>
                             </div>
-                            <div style={{ height: '6px', borderRadius: '3px', backgroundColor: '#dcfce7', overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${leadScore}%`, backgroundColor: getScoreColor(leadScore), borderRadius: '3px', transition: 'width 0.5s ease' }} />
+                            <div style={{ height: '6px', borderRadius: '3px', backgroundColor: '#e5e7eb', overflow: 'hidden' }}>
+                              <div style={{
+                                height: '100%', width: `${leadScore}%`,
+                                backgroundColor: scoreColor, borderRadius: '3px',
+                                transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)'
+                              }} />
                             </div>
                           </div>
 
-                          {/* Customer details */}
-                          <div style={{ padding: '14px 20px', backgroundColor: '#ffffff' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                          {/* Customer details grid */}
+                          <div style={{ padding: '14px 18px', borderBottom: '1px solid #f3f4f6' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                               {[
-                                ['Name', state.fullName || 'N/A'],
-                                ['Phone', state.contactPhone || 'N/A'],
-                                ['Email', state.contactEmail || 'N/A'],
-                                ['Postcode', state.postalCode || 'N/A'],
+                                ['Name', state.fullName || '—'],
+                                ['Phone', state.contactPhone || '—'],
+                                ['Email', state.contactEmail || '—'],
+                                ['Postcode', state.postalCode || '—'],
                                 ['Job Type', 'Full Garden Makeover'],
-                                ['Their Budget', state.userBudget ? formatCurrencyGBP(state.userBudget) : 'N/A'],
+                                ['Their Budget', state.userBudget ? formatCurrencyGBP(state.userBudget) : '—'],
                               ].map(([label, val]) => (
                                 <div key={label}>
-                                  <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#9ca3af', margin: '0 0 2px' }}>{label}</p>
-                                  <p style={{ fontSize: '12px', fontWeight: 600, color: '#111827', margin: 0 }}>{val}</p>
+                                  <div style={{ fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#9ca3af', fontWeight: 600, marginBottom: '3px' }}>
+                                    {label}
+                                  </div>
+                                  <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#111827' }}>{val}</div>
                                 </div>
                               ))}
                             </div>
                           </div>
 
                           {/* Timeline */}
-                          <div style={{ padding: '6px 20px 14px', backgroundColor: '#ffffff', borderTop: '1px solid #f0fdf4' }}>
-                            <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#9ca3af', margin: '0 0 2px' }}>Timeline</p>
-                            <p style={{ fontSize: '12px', fontWeight: 600, color: '#111827', margin: 0 }}>{state.projectStartTiming || 'N/A'}</p>
+                          <div style={{ padding: '12px 18px', borderBottom: '1px solid #f3f4f6' }}>
+                            <div style={{ fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#9ca3af', fontWeight: 600, marginBottom: '3px' }}>
+                              Timeline
+                            </div>
+                            <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#111827' }}>
+                              {state.projectStartTiming || '—'}
+                            </div>
                           </div>
 
-                          {/* Lead score + category */}
-                          {(() => {
-                            const scoreColor = getScoreColor(leadScore)
-                            const scoreLabel = getScoreLabel(leadScore)
-                            return (
-                              <div style={{ padding: '14px 20px', backgroundColor: '#f0fdf4', borderTop: '1px solid #86efac' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                  <span style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>Lead Quality</span>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontSize: '18px', fontWeight: 900, color: scoreColor }}>{leadScore}/100</span>
-                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff', backgroundColor: scoreColor, padding: '2px 10px', borderRadius: '20px' }}>{scoreLabel}</span>
-                                  </div>
-                                </div>
-                                <div style={{ height: '7px', borderRadius: '4px', backgroundColor: '#dcfce7', overflow: 'hidden' }}>
-                                  <div style={{ height: '100%', width: `${leadScore}%`, backgroundColor: scoreColor, borderRadius: '4px', transition: 'width 0.7s ease' }} />
-                                </div>
-                                <p style={{ fontSize: '11px', color: '#15803d', fontWeight: 700, textAlign: 'center', margin: '10px 0 0' }}>Enquiry sent</p>
+                          {/* Confirmation footer */}
+                          <div style={{ padding: '14px 18px', backgroundColor: '#f8fdf9' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                              <div style={{
+                                width: '20px', height: '20px', borderRadius: '50%',
+                                backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                              }}>
+                                <svg viewBox="0 0 12 12" fill="none" style={{ width: '10px', height: '10px' }}>
+                                  <path d="M2 6l3 3 5-5" stroke="#15803d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
                               </div>
-                            )
-                          })()}
-
+                              <span style={{ fontSize: '12.5px', color: '#15803d', fontWeight: 600 }}>
+                                Enquiry submitted — we'll be in touch soon
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       )}
 
@@ -748,25 +850,30 @@ function App() {
 
               {/* Typing indicator */}
               {isProcessing && (
-                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', gap: '8px' }}>
                   <div style={{
-                    backgroundColor: '#dcfce7',
-                    borderRadius: '12px',
-                    padding: '10px 14px',
-                    display: 'flex',
-                    gap: '4px',
-                    alignItems: 'center'
+                    width: '26px', height: '26px', borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #15803d, #166534)',
+                    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'
                   }}>
-                    {[0, 75, 150].map((delay, i) => (
+                    <svg viewBox="0 0 14 14" fill="none" style={{ width: '12px', height: '12px' }}>
+                      <path d="M7 1C4.24 1 2 3.24 2 6c0 1.73.89 3.25 2.23 4.15L3.5 13 7 11.5l3.5 1.5-.73-2.85A5 5 0 0 0 12 6c0-2.76-2.24-5-5-5Z" fill="white"/>
+                    </svg>
+                  </div>
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    borderRadius: '18px 18px 18px 5px',
+                    padding: '12px 16px',
+                    display: 'flex', gap: '5px', alignItems: 'center',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.07)'
+                  }}>
+                    {[0, 150, 300].map((delay, i) => (
                       <div key={i} style={{
-                        width: '7px',
-                        height: '7px',
-                        borderRadius: '50%',
+                        width: '7px', height: '7px', borderRadius: '50%',
                         backgroundColor: '#16a34a',
-                        animation: `pulse 1.2s ease-in-out ${delay}ms infinite`
+                        animation: `typingDot 1.4s ease-in-out ${delay}ms infinite`
                       }} />
                     ))}
-                    <span style={{ fontSize: '11px', color: '#15803d', marginLeft: '4px' }}>Thinking...</span>
                   </div>
                 </div>
               )}
@@ -777,28 +884,29 @@ function App() {
             {/* Quick Replies */}
             {activeReplies.length > 0 && (
               <div style={{
-                padding: '8px 12px',
-                backgroundColor: '#f0fdf4',
-                borderTop: '1px solid #bbf7d0',
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '6px',
+                padding: '8px 14px 10px',
+                backgroundColor: '#ffffff',
+                borderTop: '1px solid #f0fdf4',
+                display: 'flex', flexWrap: 'wrap', gap: '6px',
                 flexShrink: 0
               }}>
                 {activeReplies.map((reply, index) => (
                   <button
                     key={index}
+                    className="qr-btn"
                     onClick={() => handleQuickReply(reply.value)}
                     disabled={isProcessing}
                     style={{
-                      padding: '6px 12px',
-                      backgroundColor: '#ffffff',
+                      padding: '6px 14px',
+                      backgroundColor: '#f0fdf4',
                       color: '#15803d',
-                      border: '1px solid #86efac',
+                      border: 'none',
                       borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      cursor: 'pointer'
+                      fontSize: '12.5px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'background 0.12s',
+                      opacity: isProcessing ? 0.5 : 1
                     }}
                   >
                     {reply.text.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|\p{Emoji_Presentation}/gu, '').trim()}
@@ -809,12 +917,12 @@ function App() {
 
             {/* Input Area */}
             <div style={{
-              padding: '12px 14px',
+              padding: '10px 14px 14px',
               backgroundColor: '#ffffff',
-              borderTop: '1px solid #86efac',
+              borderTop: activeReplies.length > 0 ? 'none' : '1px solid #f0fdf4',
               flexShrink: 0
             }}>
-              <form onSubmit={handleSend} style={{ display: 'flex', gap: '8px' }}>
+              <form onSubmit={handleSend} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <input
                   ref={inputRef}
                   type="text"
@@ -828,51 +936,50 @@ function App() {
                       }
                     }
                   }}
-                  placeholder="Type your message..."
+                  placeholder="Type a message..."
                   disabled={isProcessing}
                   style={{
-                    flex: 1,
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    border: '1px solid #86efac',
-                    fontSize: '13px',
-                    outline: 'none',
-                    backgroundColor: '#f0fdf4',
-                    color: '#14532d'
+                    flex: 1, padding: '11px 16px',
+                    borderRadius: '22px',
+                    border: '1.5px solid #e5e7eb',
+                    fontSize: '13.5px', outline: 'none',
+                    backgroundColor: '#f9fafb',
+                    color: '#111827',
+                    transition: 'border-color 0.15s'
                   }}
                 />
                 <button
                   type="submit"
+                  className="send-btn"
                   disabled={isProcessing || !input.trim()}
                   style={{
-                    padding: '10px 16px',
-                    backgroundColor: '#15803d',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '10px',
-                    fontWeight: 600,
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    opacity: (isProcessing || !input.trim()) ? 0.5 : 1
+                    width: '42px', height: '42px', flexShrink: 0,
+                    background: 'linear-gradient(135deg, #15803d, #166534)',
+                    color: '#ffffff', border: 'none', borderRadius: '50%',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: (isProcessing || !input.trim()) ? 0.45 : 1,
+                    transition: 'background 0.15s, opacity 0.15s',
+                    boxShadow: '0 2px 8px rgba(21,128,61,0.35)'
                   }}
                 >
-                  Send
+                  <svg viewBox="0 0 20 20" fill="none" style={{ width: '18px', height: '18px', transform: 'translateX(1px)' }}>
+                    <path d="M3 10L17 3l-4 7 4 7L3 10Z" fill="white"/>
+                  </svg>
                 </button>
               </form>
 
-              {/* Certainty indicator */}
+              {/* Progress bar */}
               {state.certaintyLevel > 0 && (
-                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ flex: 1, height: '3px', borderRadius: '2px', overflow: 'hidden', backgroundColor: '#dcfce7' }}>
+                <div style={{ marginTop: '9px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ flex: 1, height: '3px', borderRadius: '2px', overflow: 'hidden', backgroundColor: '#f0fdf4' }}>
                     <div style={{
-                      height: '100%',
-                      width: `${state.certaintyLevel}%`,
-                      backgroundColor: '#16a34a',
-                      transition: 'width 0.5s ease'
+                      height: '100%', width: `${state.certaintyLevel}%`,
+                      background: 'linear-gradient(90deg, #86efac, #16a34a)',
+                      transition: 'width 0.5s ease', borderRadius: '2px'
                     }} />
                   </div>
-                  <span style={{ fontSize: '10px', color: '#6b7280', whiteSpace: 'nowrap' }}>
-                    {state.certaintyLevel}% confident
+                  <span style={{ fontSize: '10px', color: '#9ca3af', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                    {state.certaintyLevel}% complete
                   </span>
                 </div>
               )}
@@ -883,58 +990,59 @@ function App() {
 
         {/* Floating tooltip — only when closed */}
         {!isOpen && (
-          <div style={{
+          <div className="tooltip-pop" style={{
             backgroundColor: '#ffffff',
             color: '#14532d',
             fontSize: '13px',
             fontWeight: 600,
-            padding: '8px 14px',
-            borderRadius: '20px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-            border: '1px solid #bbf7d0',
+            padding: '9px 16px',
+            borderRadius: '22px',
+            boxShadow: '0 6px 24px rgba(0,0,0,0.13), 0 2px 6px rgba(0,0,0,0.07)',
             whiteSpace: 'nowrap',
-            marginBottom: '4px',
-            position: 'relative'
+            position: 'relative',
+            letterSpacing: '-0.1px'
           }}>
             Want an instant quote?
+            {/* Speech bubble tail */}
             <div style={{
-              position: 'absolute',
-              bottom: '-6px',
-              right: '24px',
-              width: '12px',
-              height: '12px',
-              backgroundColor: '#ffffff',
-              border: '1px solid #bbf7d0',
-              borderTop: 'none',
-              borderLeft: 'none',
-              transform: 'rotate(45deg)'
+              position: 'absolute', bottom: '-7px', right: '30px',
+              width: '0', height: '0',
+              borderLeft: '7px solid transparent',
+              borderRight: '7px solid transparent',
+              borderTop: '8px solid #ffffff',
+              filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.06))'
             }} />
           </div>
         )}
 
         {/* Toggle bubble */}
         <button
+          className="bubble-btn"
           onClick={() => setIsOpen(o => !o)}
           style={{
-            width: '68px',
-            height: '68px',
-            borderRadius: '50%',
-            backgroundColor: '#15803d',
-            border: '3px solid #ffffff',
+            width: '62px', height: '62px', borderRadius: '50%',
+            background: isOpen
+              ? 'linear-gradient(135deg, #374151, #1f2937)'
+              : 'linear-gradient(135deg, #15803d, #14532d)',
+            border: '2.5px solid #ffffff',
             cursor: 'pointer',
-            boxShadow: '0 6px 24px rgba(21,128,61,0.55)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'transform 0.2s ease',
-            overflow: 'hidden',
+            boxShadow: isOpen
+              ? '0 6px 20px rgba(0,0,0,0.3)'
+              : '0 6px 24px rgba(21,128,61,0.55), 0 2px 8px rgba(0,0,0,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s, background 0.3s',
             padding: 0
           }}
         >
-          {isOpen
-            ? <span style={{ color: '#ffffff', fontSize: '20px', fontWeight: 700, lineHeight: 1 }}>✕</span>
-            : <svg viewBox="0 0 24 24" fill="none" style={{ width: '30px', height: '30px' }}><path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="#ffffff"/></svg>
-          }
+          {isOpen ? (
+            <svg viewBox="0 0 14 14" fill="none" style={{ width: '16px', height: '16px' }}>
+              <path d="M1 1l12 12M13 1L1 13" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" style={{ width: '28px', height: '28px' }}>
+              <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="white"/>
+            </svg>
+          )}
         </button>
 
       </div>
