@@ -464,31 +464,7 @@ function App() {
 
   return (
     <>
-      {/* Page backdrop — hero photo */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden' }}>
-        {/* Full-bleed photo */}
-        <img
-          src="/hero-bg.png"
-          alt=""
-          aria-hidden="true"
-          style={{
-            position: 'absolute', inset: 0,
-            width: '100%', height: '100%',
-            objectFit: 'cover', objectPosition: 'center 50%',
-            imageRendering: 'auto'
-          }}
-        />
-        {/* Gradient overlay — lighter at top, deep at bottom */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(to bottom, rgba(8,22,8,0.30) 0%, rgba(10,26,10,0.48) 45%, rgba(6,16,6,0.78) 100%)'
-        }} />
-        {/* Edge vignette */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(ellipse at 50% 50%, transparent 42%, rgba(4,10,4,0.46) 100%)'
-        }} />
-      </div>
+      {/* No backdrop needed — the landing page in index.html provides the full background */}
 
       {/* Keyframe styles */}
       <style>{`
